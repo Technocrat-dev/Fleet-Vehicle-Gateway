@@ -1,0 +1,8 @@
+# Namespace for Fleet Vehicle Gateway
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fleet-gateway
+  labels:
+    app.kubernetes.io/name: fleet-gateway
+    app.kubernetes.io/part-of: fleet-vehicle-gateway

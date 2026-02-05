@@ -1,0 +1,16 @@
+# Fleet Vehicle Gateway - Kubernetes Deployment
+# This kustomization provides a complete production deployment
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: fleet-gateway
+
+resources:
+  - namespace.yaml
+  - secrets.yaml
+  - configmap.yaml
+  - postgres.yaml
+  - backend.yaml
+  - frontend.yaml
+  - ingress.yaml
