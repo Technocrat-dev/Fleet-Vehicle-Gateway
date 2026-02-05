@@ -20,7 +20,7 @@ from app.models.telemetry import VehicleTelemetry, GPSLocation
 import random
 import hashlib
 import math
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict
 from dataclasses import dataclass
 
@@ -108,12 +108,12 @@ class InlineSimulator:
         state.heading = (math.degrees(math.atan2(delta_lng, delta_lat)) + 360) % 360
         
         # Generate frame hash
-        frame_data = f"{state.vehicle_id}:{datetime.now().isoformat()}:{state.occupancy}"
+        frame_data = f"{state.vehicle_id}:{datetime.now(timezone.utc).isoformat()}:{state.occupancy}"
         frame_hash = hashlib.sha256(frame_data.encode()).hexdigest()
         
         return VehicleTelemetry(
             vehicle_id=state.vehicle_id,
-            timestamp=datetime.now(),
+            timestamp=datetime.now(timezone.utc),
             occupancy_count=state.occupancy,
             inference_latency_ms=9.6 + random.uniform(-2, 3),
             location=GPSLocation(latitude=lat, longitude=lng),

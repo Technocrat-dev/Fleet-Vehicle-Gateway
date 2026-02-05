@@ -4,7 +4,7 @@ Analytics API - Endpoints for fleet analytics and trends.
 All endpoints require authentication.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 from fastapi import APIRouter, Request, Query, Depends
 import time
@@ -180,5 +180,5 @@ async def get_consent_stats(
         "consent_breakdown": consent_counts,
         "compliance_rate_percent": round(compliance_rate, 1),
         "total_vehicles": total,
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }

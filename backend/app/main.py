@@ -13,7 +13,7 @@ Fleet Vehicle Data Gateway API with:
 import asyncio
 import uuid
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List
 
 from fastapi import FastAPI, Request, Response
@@ -131,11 +131,11 @@ async def logging_middleware(request: Request, call_next):
     request_id = str(uuid.uuid4())[:8]
     RequestContext.bind(request_id=request_id)
     
-    start_time = datetime.now()
+    start_time = datetime.now(timezone.utc)
     
     response: Response = await call_next(request)
     
-    duration_ms = (datetime.now() - start_time).total_seconds() * 1000
+    duration_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
     
     # Don't log health checks or metrics (too noisy)
     if request.url.path not in ["/health", "/ready", "/metrics"]:

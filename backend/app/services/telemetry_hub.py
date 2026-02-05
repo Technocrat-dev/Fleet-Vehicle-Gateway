@@ -5,7 +5,7 @@ Maintains current state of all vehicles and broadcasts updates to WebSocket clie
 """
 
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Set, Optional, Callable
 from dataclasses import dataclass, field
 import json
@@ -52,13 +52,13 @@ class TelemetryHub:
             
             if vehicle_id in self.vehicles:
                 self.vehicles[vehicle_id].last_telemetry = telemetry
-                self.vehicles[vehicle_id].last_updated = datetime.now()
+                self.vehicles[vehicle_id].last_updated = datetime.now(timezone.utc)
                 self.vehicles[vehicle_id].message_count += 1
             else:
                 self.vehicles[vehicle_id] = VehicleState(
                     vehicle_id=vehicle_id,
                     last_telemetry=telemetry,
-                    last_updated=datetime.now(),
+                    last_updated=datetime.now(timezone.utc),
                     message_count=1,
                 )
             
@@ -104,7 +104,7 @@ class TelemetryHub:
         
         state = self.vehicles[vehicle_id]
         t = state.last_telemetry
-        is_active = (datetime.now() - state.last_updated) < self.inactive_threshold
+        is_active = (datetime.now(timezone.utc) - state.last_updated) < self.inactive_threshold
         
         return VehicleStatus(
             vehicle_id=t.vehicle_id,
@@ -138,7 +138,7 @@ class TelemetryHub:
                 average_occupancy=0.0,
                 average_latency_ms=0.0,
                 consent_granted_count=0,
-                timestamp=datetime.now(),
+                timestamp=datetime.now(timezone.utc),
             )
         
         active = [v for v in vehicles if v.is_active]
@@ -154,7 +154,7 @@ class TelemetryHub:
             average_occupancy=avg_occupancy,
             average_latency_ms=avg_latency,
             consent_granted_count=consent_granted,
-            timestamp=datetime.now(),
+            timestamp=datetime.now(timezone.utc),
         )
     
     def get_recent_history(self, limit: int = 100) -> List[VehicleTelemetry]:

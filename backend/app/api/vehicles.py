@@ -4,7 +4,7 @@ Vehicles API - REST endpoints for fleet management.
 All endpoints require authentication.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Request, Query, Depends
 
@@ -42,7 +42,7 @@ async def list_vehicles(
     return VehicleListResponse(
         vehicles=vehicles,
         total=len(vehicles),
-        timestamp=datetime.now(),
+        timestamp=datetime.now(timezone.utc),
     )
 
 
@@ -112,5 +112,5 @@ async def get_vehicle_history(
         "vehicle_id": vehicle_id,
         "history": [t.model_dump() for t in history],
         "count": len(history),
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
