@@ -52,6 +52,7 @@ yarn-error.log*
 # GCP
 *.json
 !package.json
+!package-lock.json
 !tsconfig.json
 service-account-key.json
 
