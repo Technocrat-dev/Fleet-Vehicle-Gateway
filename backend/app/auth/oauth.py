@@ -4,7 +4,6 @@ OAuth Providers
 Social login integration with Google and GitHub.
 """
 
-from typing import Optional
 from authlib.integrations.starlette_client import OAuth
 from starlette.requests import Request
 

@@ -6,11 +6,10 @@ Maintains current state of all vehicles and broadcasts updates to WebSocket clie
 
 import asyncio
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Set, Optional, Callable
-from dataclasses import dataclass, field
-import json
+from typing import Dict, List, Set, Optional
+from dataclasses import dataclass
 
-from app.models.telemetry import VehicleTelemetry, VehicleStatus, FleetSummary, GPSLocation
+from app.models.telemetry import VehicleTelemetry, VehicleStatus, FleetSummary
 
 
 @dataclass

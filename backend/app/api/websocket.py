@@ -3,7 +3,7 @@ WebSocket API - Real-time telemetry streaming.
 """
 
 import asyncio
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Request
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 import json
 
 router = APIRouter()

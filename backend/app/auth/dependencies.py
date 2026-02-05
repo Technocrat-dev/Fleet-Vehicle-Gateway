@@ -138,7 +138,7 @@ async def verify_api_key(
     result = await db.execute(
         select(APIKey).where(
             APIKey.key_hash == key_hash,
-            APIKey.is_active == True,
+            APIKey.is_active.is_(True),
         )
     )
     api_key_obj = result.scalar_one_or_none()

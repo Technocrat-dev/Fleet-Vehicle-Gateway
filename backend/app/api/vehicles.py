@@ -5,16 +5,14 @@ All endpoints require authentication.
 """
 
 from datetime import datetime, timezone
-from typing import Optional
 from fastapi import APIRouter, HTTPException, Request, Query, Depends
 
 from app.models.telemetry import (
     VehicleStatus,
     VehicleListResponse,
     FleetSummary,
-    VehicleTelemetry,
 )
-from app.auth.dependencies import get_current_user, get_current_user_optional
+from app.auth.dependencies import get_current_user
 from app.models.db_models import User
 
 

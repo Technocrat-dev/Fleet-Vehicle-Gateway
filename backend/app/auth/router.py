@@ -5,9 +5,8 @@ Endpoints for user registration, login, OAuth, and token management.
 """
 
 from datetime import datetime, timedelta, timezone
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -153,7 +152,7 @@ async def refresh_token(
     result = await db.execute(
         select(RefreshToken).where(
             RefreshToken.token_hash == token_hash,
-            RefreshToken.is_revoked == False,
+            RefreshToken.is_revoked.is_(False),
         )
     )
     token_record = result.scalar_one_or_none()
