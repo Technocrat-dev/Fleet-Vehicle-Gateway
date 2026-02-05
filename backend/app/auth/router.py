@@ -265,7 +265,7 @@ async def google_callback(
         logger.error("google_oauth_error", error=str(e))
         # Redirect to frontend with error
         return RedirectResponse(
-            url="http://localhost:3000/auth/login?error=google_auth_failed"
+            url=f"{settings.FRONTEND_URL}/auth/login?error=google_auth_failed"
         )
 
     user_info = await get_google_user_info(token)
@@ -273,7 +273,7 @@ async def google_callback(
 
     # Redirect to frontend with tokens
     redirect_url = (
-        f"http://localhost:3000/auth/callback"
+        f"{settings.FRONTEND_URL}/auth/callback"
         f"?access_token={oauth_response.access_token}"
         f"&refresh_token={oauth_response.refresh_token}"
     )
@@ -311,7 +311,7 @@ async def github_callback(
         logger.error("github_oauth_error", error=str(e))
         # Redirect to frontend with error
         return RedirectResponse(
-            url="http://localhost:3000/auth/login?error=github_auth_failed"
+            url=f"{settings.FRONTEND_URL}/auth/login?error=github_auth_failed"
         )
 
     user_info = await get_github_user_info(request, token)
@@ -319,7 +319,7 @@ async def github_callback(
 
     # Redirect to frontend with tokens
     redirect_url = (
-        f"http://localhost:3000/auth/callback"
+        f"{settings.FRONTEND_URL}/auth/callback"
         f"?access_token={oauth_response.access_token}"
         f"&refresh_token={oauth_response.refresh_token}"
     )

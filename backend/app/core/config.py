@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     GITHUB_CLIENT_ID: Optional[str] = None
     GITHUB_CLIENT_SECRET: Optional[str] = None
     OAUTH_REDIRECT_URL: str = "http://localhost:8000/auth/callback"
+    FRONTEND_URL: str = "http://localhost:3000"
 
     # CORS
     CORS_ORIGINS: List[str] = [
