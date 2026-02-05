@@ -10,7 +10,6 @@ from sqlalchemy.orm import DeclarativeBase
 
 from app.core.config import settings
 
-
 # Create async engine
 engine = create_async_engine(
     settings.DATABASE_URL,
@@ -32,13 +31,14 @@ async_session_maker = async_sessionmaker(
 
 class Base(DeclarativeBase):
     """Base class for all database models."""
+
     pass
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
     Dependency that provides a database session.
-    
+
     Usage:
         @router.get("/items")
         async def get_items(db: AsyncSession = Depends(get_db)):

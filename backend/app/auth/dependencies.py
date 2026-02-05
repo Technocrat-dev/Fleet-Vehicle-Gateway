@@ -17,7 +17,6 @@ from app.core.logging import get_logger
 from app.models.db_models import User, APIKey
 from app.auth.security import decode_token, hash_token
 
-
 logger = get_logger(__name__)
 
 # Bearer token scheme
@@ -30,7 +29,7 @@ async def get_current_user(
 ) -> User:
     """
     Get the current authenticated user from JWT token.
-    
+
     Raises HTTPException 401 if not authenticated.
     """
     if not credentials:
@@ -39,17 +38,17 @@ async def get_current_user(
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     token = credentials.credentials
     payload = decode_token(token)
-    
+
     if not payload:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     # Check token type
     if payload.get("type") != "access":
         raise HTTPException(
@@ -57,7 +56,7 @@ async def get_current_user(
             detail="Invalid token type",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     user_id = payload.get("sub")
     if not user_id:
         raise HTTPException(
@@ -65,24 +64,24 @@ async def get_current_user(
             detail="Invalid credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     # Get user from database
     result = await db.execute(select(User).where(User.id == int(user_id)))
     user = result.scalar_one_or_none()
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User is deactivated",
         )
-    
+
     logger.debug("user_authenticated", user_id=user.id, email=user.email)
     return user
 
@@ -93,12 +92,12 @@ async def get_current_user_optional(
 ) -> Optional[User]:
     """
     Get the current user if authenticated, None otherwise.
-    
+
     Use this for endpoints that work both authenticated and unauthenticated.
     """
     if not credentials:
         return None
-    
+
     try:
         return await get_current_user(credentials, db)
     except HTTPException:
@@ -125,16 +124,16 @@ async def verify_api_key(
 ) -> Optional[APIKey]:
     """
     Verify API key from X-API-Key header.
-    
+
     Returns None if no API key provided, raises 401 if invalid.
     """
     api_key = request.headers.get("X-API-Key")
-    
+
     if not api_key:
         return None
-    
+
     key_hash = hash_token(api_key)
-    
+
     result = await db.execute(
         select(APIKey).where(
             APIKey.key_hash == key_hash,
@@ -142,25 +141,27 @@ async def verify_api_key(
         )
     )
     api_key_obj = result.scalar_one_or_none()
-    
+
     if not api_key_obj:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid API key",
         )
-    
+
     # Check expiration
     if api_key_obj.expires_at and api_key_obj.expires_at < datetime.now(timezone.utc):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
         )
-    
+
     # Update last used
     api_key_obj.last_used_at = datetime.now(timezone.utc)
     await db.commit()
-    
-    logger.debug("api_key_authenticated", key_name=api_key_obj.name, user_id=api_key_obj.user_id)
+
+    logger.debug(
+        "api_key_authenticated", key_name=api_key_obj.name, user_id=api_key_obj.user_id
+    )
     return api_key_obj
 
 
@@ -171,7 +172,7 @@ async def get_auth_user_or_api_key(
 ) -> User:
     """
     Authenticate via either JWT token or API key.
-    
+
     Tries JWT first, then falls back to API key.
     """
     # Try JWT auth
@@ -180,7 +181,7 @@ async def get_auth_user_or_api_key(
             return await get_current_user(credentials, db)
         except HTTPException:
             pass
-    
+
     # Try API key
     if request:
         api_key = await verify_api_key(request, db)
@@ -190,7 +191,7 @@ async def get_auth_user_or_api_key(
             user = result.scalar_one_or_none()
             if user and user.is_active:
                 return user
-    
+
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Not authenticated",
@@ -201,10 +202,11 @@ async def get_auth_user_or_api_key(
 def require_scopes(*required_scopes: str):
     """
     Factory for scope-checking dependency.
-    
+
     Usage:
         @router.post("/admin", dependencies=[Depends(require_scopes("admin"))])
     """
+
     async def check_scopes(
         api_key: Optional[APIKey] = Depends(verify_api_key),
         user: User = Depends(get_current_user),
@@ -212,7 +214,7 @@ def require_scopes(*required_scopes: str):
         # Superusers have all scopes
         if user.is_superuser:
             return user
-        
+
         # Check API key scopes if using API key
         if api_key:
             key_scopes = set(api_key.scopes.split(","))
@@ -222,7 +224,7 @@ def require_scopes(*required_scopes: str):
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail=f"Missing required scope: {scope}",
                     )
-        
+
         return user
-    
+
     return check_scopes

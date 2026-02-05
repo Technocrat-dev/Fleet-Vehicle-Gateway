@@ -15,7 +15,6 @@ from app.models.telemetry import (
 from app.auth.dependencies import get_current_user
 from app.models.db_models import User
 
-
 router = APIRouter()
 
 
@@ -27,16 +26,16 @@ async def list_vehicles(
 ):
     """
     List all tracked vehicles with their current status.
-    
+
     Returns real-time data from all vehicles in the fleet.
     Requires authentication.
     """
     hub = request.app.state.telemetry_hub
     vehicles = hub.get_all_vehicles()
-    
+
     if active_only:
         vehicles = [v for v in vehicles if v.is_active]
-    
+
     return VehicleListResponse(
         vehicles=vehicles,
         total=len(vehicles),
@@ -51,7 +50,7 @@ async def get_fleet_summary(
 ):
     """
     Get aggregated fleet statistics.
-    
+
     Includes total passengers, average occupancy, average latency, etc.
     Requires authentication.
     """
@@ -67,18 +66,15 @@ async def get_vehicle(
 ):
     """
     Get detailed status for a specific vehicle.
-    
+
     Requires authentication.
     """
     hub = request.app.state.telemetry_hub
     vehicle = hub.get_vehicle(vehicle_id)
-    
+
     if not vehicle:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Vehicle '{vehicle_id}' not found"
-        )
-    
+        raise HTTPException(status_code=404, detail=f"Vehicle '{vehicle_id}' not found")
+
     return vehicle
 
 
@@ -91,21 +87,18 @@ async def get_vehicle_history(
 ):
     """
     Get telemetry history for a specific vehicle.
-    
+
     Returns the last N telemetry events from this vehicle.
     Requires authentication.
     """
     hub = request.app.state.telemetry_hub
-    
+
     # Check vehicle exists
     if not hub.get_vehicle(vehicle_id):
-        raise HTTPException(
-            status_code=404,
-            detail=f"Vehicle '{vehicle_id}' not found"
-        )
-    
+        raise HTTPException(status_code=404, detail=f"Vehicle '{vehicle_id}' not found")
+
     history = hub.get_vehicle_history(vehicle_id, limit)
-    
+
     return {
         "vehicle_id": vehicle_id,
         "history": [t.model_dump() for t in history],

@@ -13,7 +13,6 @@ from app.models.telemetry import AnalyticsResponse
 from app.auth.dependencies import get_current_user
 from app.models.db_models import User
 
-
 router = APIRouter()
 
 
@@ -26,18 +25,18 @@ async def get_occupancy_trends(
 ):
     """
     Get occupancy trends over time.
-    
+
     Returns recent occupancy data points for charting.
     Requires authentication.
     """
     start_time = time.time()
     hub = request.app.state.telemetry_hub
-    
+
     if vehicle_id:
         history = hub.get_vehicle_history(vehicle_id, limit)
     else:
         history = hub.get_recent_history(limit)
-    
+
     data = [
         {
             "timestamp": t.timestamp.isoformat(),
@@ -46,9 +45,9 @@ async def get_occupancy_trends(
         }
         for t in history
     ]
-    
+
     query_time = (time.time() - start_time) * 1000
-    
+
     return AnalyticsResponse(
         data=data,
         query_time_ms=query_time,
@@ -64,15 +63,15 @@ async def get_latency_metrics(
 ):
     """
     Get inference latency metrics.
-    
+
     Demonstrates the 9.6ms average latency from OpenVINO optimization.
     Requires authentication.
     """
     start_time = time.time()
     hub = request.app.state.telemetry_hub
-    
+
     history = hub.get_recent_history(limit)
-    
+
     data = [
         {
             "timestamp": t.timestamp.isoformat(),
@@ -81,7 +80,7 @@ async def get_latency_metrics(
         }
         for t in history
     ]
-    
+
     # Calculate statistics
     if data:
         latencies = [d["latency_ms"] for d in data]
@@ -93,9 +92,9 @@ async def get_latency_metrics(
         }
     else:
         stats = {"min_ms": 0, "max_ms": 0, "avg_ms": 0, "p95_ms": 0}
-    
+
     query_time = (time.time() - start_time) * 1000
-    
+
     return {
         "data": data,
         "stats": stats,
@@ -111,15 +110,15 @@ async def get_route_analytics(
 ):
     """
     Get analytics grouped by route.
-    
+
     Shows vehicle distribution across Tokyo routes.
     Requires authentication.
     """
     start_time = time.time()
     hub = request.app.state.telemetry_hub
-    
+
     vehicles = hub.get_all_vehicles()
-    
+
     # Group by route
     route_stats = {}
     for v in vehicles:
@@ -136,7 +135,7 @@ async def get_route_analytics(
         route_stats[route_id]["total_passengers"] += v.occupancy_count
         if v.speed_kmh:
             route_stats[route_id]["speeds"].append(v.speed_kmh)
-    
+
     # Calculate averages
     data = []
     for route_id, stats in route_stats.items():
@@ -144,9 +143,9 @@ async def get_route_analytics(
             stats["avg_speed_kmh"] = sum(stats["speeds"]) / len(stats["speeds"])
         del stats["speeds"]
         data.append(stats)
-    
+
     query_time = (time.time() - start_time) * 1000
-    
+
     return {
         "data": sorted(data, key=lambda x: x["vehicle_count"], reverse=True),
         "query_time_ms": query_time,
@@ -161,21 +160,21 @@ async def get_consent_stats(
 ):
     """
     Get GDPR consent status statistics.
-    
+
     Shows privacy compliance across the fleet.
     Requires authentication.
     """
     hub = request.app.state.telemetry_hub
     vehicles = hub.get_all_vehicles()
-    
+
     consent_counts = {"granted": 0, "pending": 0, "withdrawn": 0}
     for v in vehicles:
         status = v.consent_status if v.consent_status in consent_counts else "pending"
         consent_counts[status] += 1
-    
+
     total = sum(consent_counts.values())
     compliance_rate = consent_counts["granted"] / total * 100 if total > 0 else 0
-    
+
     return {
         "consent_breakdown": consent_counts,
         "compliance_rate_percent": round(compliance_rate, 1),

@@ -14,7 +14,6 @@ from passlib.context import CryptContext
 
 from app.core.config import settings
 
-
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -36,30 +35,32 @@ def create_access_token(
 ) -> str:
     """
     Create a JWT access token.
-    
+
     Args:
         subject: Token subject (usually user ID)
         expires_delta: Custom expiration time
         additional_claims: Extra claims to include
-    
+
     Returns:
         Encoded JWT token
     """
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    
+        expire = datetime.now(timezone.utc) + timedelta(
+            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+        )
+
     to_encode = {
         "sub": str(subject),
         "exp": expire,
         "iat": datetime.now(timezone.utc),
         "type": "access",
     }
-    
+
     if additional_claims:
         to_encode.update(additional_claims)
-    
+
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
@@ -69,18 +70,20 @@ def create_refresh_token(
 ) -> tuple[str, str]:
     """
     Create a refresh token.
-    
+
     Returns:
         Tuple of (token, token_hash) - store hash in DB, give token to client
     """
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-    
+        expire = datetime.now(timezone.utc) + timedelta(
+            days=settings.REFRESH_TOKEN_EXPIRE_DAYS
+        )
+
     # Generate a secure random token
     raw_token = secrets.token_urlsafe(32)
-    
+
     to_encode = {
         "sub": str(subject),
         "exp": expire,
@@ -88,22 +91,24 @@ def create_refresh_token(
         "type": "refresh",
         "jti": raw_token[:16],  # Token ID for revocation
     }
-    
+
     token = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     token_hash = hash_token(token)
-    
+
     return token, token_hash
 
 
 def decode_token(token: str) -> Optional[dict]:
     """
     Decode and validate a JWT token.
-    
+
     Returns:
         Token payload if valid, None otherwise
     """
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
         return payload
     except JWTError:
         return None
@@ -117,7 +122,7 @@ def hash_token(token: str) -> str:
 def generate_api_key() -> tuple[str, str]:
     """
     Generate an API key.
-    
+
     Returns:
         Tuple of (api_key, key_hash) - give key to user, store hash in DB
     """

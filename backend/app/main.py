@@ -32,7 +32,6 @@ from app.auth.router import router as auth_router
 from app.services.telemetry_hub import TelemetryHub
 from app.services.kafka_consumer import TelemetryConsumer
 
-
 # Initialize logging
 setup_logging()
 logger = get_logger(__name__)
@@ -51,44 +50,47 @@ async def lifespan(app: FastAPI):
     Starts/stops background services.
     """
     logger.info("application_starting", version="1.0.0", env=settings.APP_ENV)
-    
+
     # Initialize database
     await init_db()
     logger.info("database_initialized")
-    
+
     # Start Kafka consumer in background
     consumer_task = None
     if settings.KAFKA_ENABLED:
         consumer = TelemetryConsumer(telemetry_hub)
         consumer_task = asyncio.create_task(consumer.run())
-        logger.info("kafka_consumer_started", bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS)
+        logger.info(
+            "kafka_consumer_started", bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS
+        )
     else:
         # Start simulator in demo mode
         from app.services.simulator_service import start_simulator
+
         consumer_task = asyncio.create_task(start_simulator(telemetry_hub))
         logger.info("simulator_started", vehicle_count=settings.SIMULATOR_VEHICLE_COUNT)
-    
+
     # Store hub in app state for access in routes
     app.state.telemetry_hub = telemetry_hub
-    
+
     logger.info(
         "application_ready",
         api_docs=f"http://localhost:{settings.BACKEND_PORT}/docs",
         websocket=f"ws://localhost:{settings.BACKEND_PORT}/ws/telemetry",
     )
-    
+
     yield  # Application runs here
-    
+
     # Shutdown
     logger.info("application_shutting_down")
-    
+
     if consumer_task:
         consumer_task.cancel()
         try:
             await consumer_task
         except asyncio.CancelledError:
             pass
-    
+
     await close_db()
     logger.info("application_stopped")
 
@@ -129,13 +131,13 @@ async def logging_middleware(request: Request, call_next):
     """Add request ID and log requests."""
     request_id = str(uuid.uuid4())[:8]
     RequestContext.bind(request_id=request_id)
-    
+
     start_time = datetime.now(timezone.utc)
-    
+
     response: Response = await call_next(request)
-    
+
     duration_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
-    
+
     # Don't log health checks or metrics (too noisy)
     if request.url.path not in ["/health", "/ready", "/metrics"]:
         logger.info(
@@ -145,10 +147,10 @@ async def logging_middleware(request: Request, call_next):
             status_code=response.status_code,
             duration_ms=round(duration_ms, 2),
         )
-    
+
     response.headers["X-Request-ID"] = request_id
     RequestContext.clear()
-    
+
     return response
 
 
@@ -165,6 +167,7 @@ async def health_check():
     """Kubernetes liveness probe - includes database connectivity check."""
     from app.core.database import engine
     from sqlalchemy import text
+
     try:
         async with engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
@@ -186,7 +189,7 @@ async def readiness_check():
 async def prometheus_metrics(request: Request):
     """Prometheus metrics endpoint."""
     stats = telemetry_hub.get_stats()
-    
+
     metrics = f"""# HELP fleet_vehicles_total Total number of tracked vehicles
 # TYPE fleet_vehicles_total gauge
 fleet_vehicles_total {stats['vehicle_count']}

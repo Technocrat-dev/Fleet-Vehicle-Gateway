@@ -15,6 +15,7 @@ from app.models.telemetry import VehicleTelemetry, VehicleStatus, FleetSummary
 @dataclass
 class VehicleState:
     """Internal state for a tracked vehicle."""
+
     vehicle_id: str
     last_telemetry: VehicleTelemetry
     last_updated: datetime
@@ -24,14 +25,14 @@ class VehicleState:
 class TelemetryHub:
     """
     Central hub for vehicle telemetry management.
-    
+
     Responsibilities:
     - Maintain current state of all vehicles
     - Track telemetry history for analytics
     - Broadcast updates to WebSocket clients
     - Provide aggregated statistics
     """
-    
+
     def __init__(self, inactive_threshold_seconds: int = 30):
         self.vehicles: Dict[str, VehicleState] = {}
         self.websocket_clients: Set = set()
@@ -40,7 +41,7 @@ class TelemetryHub:
         self._history: List[VehicleTelemetry] = []
         self._history_max_size = 10000  # Keep last 10k messages
         self._lock = asyncio.Lock()
-    
+
     async def process_telemetry(self, telemetry: VehicleTelemetry):
         """
         Process incoming telemetry from a vehicle.
@@ -48,7 +49,7 @@ class TelemetryHub:
         """
         async with self._lock:
             vehicle_id = telemetry.vehicle_id
-            
+
             if vehicle_id in self.vehicles:
                 self.vehicles[vehicle_id].last_telemetry = telemetry
                 self.vehicles[vehicle_id].last_updated = datetime.now(timezone.utc)
@@ -60,24 +61,24 @@ class TelemetryHub:
                     last_updated=datetime.now(timezone.utc),
                     message_count=1,
                 )
-            
+
             self.messages_processed += 1
-            
+
             # Add to history (ring buffer)
             self._history.append(telemetry)
             if len(self._history) > self._history_max_size:
-                self._history = self._history[-self._history_max_size:]
-        
+                self._history = self._history[-self._history_max_size :]
+
         # Broadcast to WebSocket clients
         await self._broadcast(telemetry)
-    
+
     async def _broadcast(self, telemetry: VehicleTelemetry):
         """Broadcast telemetry update to all connected WebSocket clients."""
         if not self.websocket_clients:
             return
-        
+
         message = telemetry.model_dump_json()
-        
+
         # Send to all clients, remove disconnected ones
         disconnected = set()
         for client in self.websocket_clients:
@@ -85,26 +86,28 @@ class TelemetryHub:
                 await client.send_text(message)
             except Exception:
                 disconnected.add(client)
-        
+
         self.websocket_clients -= disconnected
-    
+
     def register_client(self, websocket):
         """Register a WebSocket client for updates."""
         self.websocket_clients.add(websocket)
-    
+
     def unregister_client(self, websocket):
         """Unregister a WebSocket client."""
         self.websocket_clients.discard(websocket)
-    
+
     def get_vehicle(self, vehicle_id: str) -> Optional[VehicleStatus]:
         """Get current status of a specific vehicle."""
         if vehicle_id not in self.vehicles:
             return None
-        
+
         state = self.vehicles[vehicle_id]
         t = state.last_telemetry
-        is_active = (datetime.now(timezone.utc) - state.last_updated) < self.inactive_threshold
-        
+        is_active = (
+            datetime.now(timezone.utc) - state.last_updated
+        ) < self.inactive_threshold
+
         return VehicleStatus(
             vehicle_id=t.vehicle_id,
             last_seen=state.last_updated,
@@ -116,19 +119,19 @@ class TelemetryHub:
             speed_kmh=t.speed_kmh,
             is_active=is_active,
         )
-    
+
     def get_all_vehicles(self) -> List[VehicleStatus]:
         """Get current status of all tracked vehicles."""
         return [
-            self.get_vehicle(vid) 
+            self.get_vehicle(vid)
             for vid in self.vehicles.keys()
             if self.get_vehicle(vid) is not None
         ]
-    
+
     def get_fleet_summary(self) -> FleetSummary:
         """Get aggregated fleet statistics."""
         vehicles = self.get_all_vehicles()
-        
+
         if not vehicles:
             return FleetSummary(
                 total_vehicles=0,
@@ -139,13 +142,13 @@ class TelemetryHub:
                 consent_granted_count=0,
                 timestamp=datetime.now(timezone.utc),
             )
-        
+
         active = [v for v in vehicles if v.is_active]
         total_passengers = sum(v.occupancy_count for v in vehicles)
         avg_occupancy = total_passengers / len(vehicles) if vehicles else 0
         avg_latency = sum(v.inference_latency_ms for v in vehicles) / len(vehicles)
         consent_granted = sum(1 for v in vehicles if v.consent_status == "granted")
-        
+
         return FleetSummary(
             total_vehicles=len(vehicles),
             active_vehicles=len(active),
@@ -155,22 +158,17 @@ class TelemetryHub:
             consent_granted_count=consent_granted,
             timestamp=datetime.now(timezone.utc),
         )
-    
+
     def get_recent_history(self, limit: int = 100) -> List[VehicleTelemetry]:
         """Get recent telemetry history."""
         return self._history[-limit:]
-    
+
     def get_vehicle_history(
-        self, 
-        vehicle_id: str, 
-        limit: int = 100
+        self, vehicle_id: str, limit: int = 100
     ) -> List[VehicleTelemetry]:
         """Get telemetry history for a specific vehicle."""
-        return [
-            t for t in self._history 
-            if t.vehicle_id == vehicle_id
-        ][-limit:]
-    
+        return [t for t in self._history if t.vehicle_id == vehicle_id][-limit:]
+
     def get_stats(self) -> dict:
         """Get hub statistics for monitoring."""
         summary = self.get_fleet_summary()
@@ -183,7 +181,7 @@ class TelemetryHub:
             "avg_latency_ms": summary.average_latency_ms,
             "history_size": len(self._history),
         }
-    
+
     def is_healthy(self) -> bool:
         """Check if the hub is operational."""
         # Consider healthy if we have received any messages

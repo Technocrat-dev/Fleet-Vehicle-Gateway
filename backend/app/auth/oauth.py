@@ -10,7 +10,6 @@ from starlette.requests import Request
 from app.core.config import settings
 from app.auth.schemas import OAuthUserInfo
 
-
 # Initialize OAuth client
 oauth = OAuth()
 
@@ -40,7 +39,7 @@ if settings.GITHUB_CLIENT_ID and settings.GITHUB_CLIENT_SECRET:
 async def get_google_user_info(token: dict) -> OAuthUserInfo:
     """Extract user info from Google OAuth token."""
     userinfo = token.get("userinfo", {})
-    
+
     return OAuthUserInfo(
         provider="google",
         oauth_id=userinfo.get("sub", ""),
@@ -56,7 +55,7 @@ async def get_github_user_info(request: Request, token: dict) -> OAuthUserInfo:
     client = oauth.github
     resp = await client.get("user", token=token)
     profile = resp.json()
-    
+
     # Get primary email (may be private)
     email = profile.get("email")
     if not email:
@@ -66,7 +65,7 @@ async def get_github_user_info(request: Request, token: dict) -> OAuthUserInfo:
             if e.get("primary"):
                 email = e.get("email")
                 break
-    
+
     return OAuthUserInfo(
         provider="github",
         oauth_id=str(profile.get("id", "")),

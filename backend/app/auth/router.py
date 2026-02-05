@@ -46,7 +46,6 @@ from app.auth.oauth import (
     is_github_enabled,
 )
 
-
 logger = get_logger(__name__)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -55,14 +54,17 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 # Local Authentication
 # ============================================
 
-@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED
+)
 async def register(
     user_data: UserCreate,
     db: AsyncSession = Depends(get_db),
 ):
     """
     Register a new user with email and password.
-    
+
     Returns access and refresh tokens on success.
     """
     # Check if email already exists
@@ -72,7 +74,7 @@ async def register(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
         )
-    
+
     # Create user
     user = User(
         email=user_data.email,
@@ -82,9 +84,9 @@ async def register(
     db.add(user)
     await db.commit()
     await db.refresh(user)
-    
+
     logger.info("user_registered", user_id=user.id, email=user.email)
-    
+
     # Generate tokens
     return await _create_token_response(user, db)
 
@@ -96,37 +98,37 @@ async def login(
 ):
     """
     Login with email and password.
-    
+
     Returns access and refresh tokens on success.
     """
     # Get user
     result = await db.execute(select(User).where(User.email == credentials.email))
     user = result.scalar_one_or_none()
-    
+
     if not user or not user.hashed_password:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
-    
+
     if not verify_password(credentials.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
-    
+
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is deactivated",
         )
-    
+
     # Update last login
     user.last_login = datetime.now(timezone.utc)
     await db.commit()
-    
+
     logger.info("user_logged_in", user_id=user.id, email=user.email)
-    
+
     return await _create_token_response(user, db)
 
 
@@ -140,13 +142,13 @@ async def refresh_token(
     """
     # Decode refresh token
     payload = decode_token(data.refresh_token)
-    
+
     if not payload or payload.get("type") != "refresh":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid refresh token",
         )
-    
+
     # Check if token is in database and not revoked
     token_hash = hash_token(data.refresh_token)
     result = await db.execute(
@@ -156,37 +158,37 @@ async def refresh_token(
         )
     )
     token_record = result.scalar_one_or_none()
-    
+
     if not token_record:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh token not found or revoked",
         )
-    
+
     # Check expiration
     if token_record.expires_at < datetime.now(timezone.utc):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
         )
-    
+
     # Get user
     result = await db.execute(select(User).where(User.id == token_record.user_id))
     user = result.scalar_one_or_none()
-    
+
     if not user or not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found or deactivated",
         )
-    
+
     # Update last used
     token_record.last_used_at = datetime.now(timezone.utc)
     await db.commit()
-    
+
     # Generate new access token
     access_token = create_access_token(user.id)
-    
+
     return AccessTokenResponse(
         access_token=access_token,
         expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
@@ -203,7 +205,7 @@ async def logout(
     Logout by revoking the refresh token.
     """
     token_hash = hash_token(data.refresh_token)
-    
+
     result = await db.execute(
         select(RefreshToken).where(
             RefreshToken.token_hash == token_hash,
@@ -211,19 +213,20 @@ async def logout(
         )
     )
     token_record = result.scalar_one_or_none()
-    
+
     if token_record:
         token_record.is_revoked = True
         await db.commit()
-    
+
     logger.info("user_logged_out", user_id=current_user.id)
-    
+
     return {"message": "Successfully logged out"}
 
 
 # ============================================
 # OAuth Social Login
 # ============================================
+
 
 @router.get("/providers")
 async def get_oauth_providers():
@@ -239,7 +242,7 @@ async def google_login(request: Request):
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
             detail="Google OAuth not configured",
         )
-    
+
     redirect_uri = f"{settings.OAUTH_REDIRECT_URL}/google"
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
@@ -255,17 +258,19 @@ async def google_callback(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
             detail="Google OAuth not configured",
         )
-    
+
     try:
         token = await oauth.google.authorize_access_token(request)
     except Exception as e:
         logger.error("google_oauth_error", error=str(e))
         # Redirect to frontend with error
-        return RedirectResponse(url="http://localhost:3000/auth/login?error=google_auth_failed")
-    
+        return RedirectResponse(
+            url="http://localhost:3000/auth/login?error=google_auth_failed"
+        )
+
     user_info = await get_google_user_info(token)
     oauth_response = await _handle_oauth_user(user_info, db)
-    
+
     # Redirect to frontend with tokens
     redirect_url = (
         f"http://localhost:3000/auth/callback"
@@ -283,7 +288,7 @@ async def github_login(request: Request):
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
             detail="GitHub OAuth not configured",
         )
-    
+
     redirect_uri = f"{settings.OAUTH_REDIRECT_URL}/github"
     return await oauth.github.authorize_redirect(request, redirect_uri)
 
@@ -299,17 +304,19 @@ async def github_callback(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
             detail="GitHub OAuth not configured",
         )
-    
+
     try:
         token = await oauth.github.authorize_access_token(request)
     except Exception as e:
         logger.error("github_oauth_error", error=str(e))
         # Redirect to frontend with error
-        return RedirectResponse(url="http://localhost:3000/auth/login?error=github_auth_failed")
-    
+        return RedirectResponse(
+            url="http://localhost:3000/auth/login?error=github_auth_failed"
+        )
+
     user_info = await get_github_user_info(request, token)
     oauth_response = await _handle_oauth_user(user_info, db)
-    
+
     # Redirect to frontend with tokens
     redirect_url = (
         f"http://localhost:3000/auth/callback"
@@ -323,6 +330,7 @@ async def github_callback(
 # User Profile
 # ============================================
 
+
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_profile(
     current_user: User = Depends(get_current_user),
@@ -335,7 +343,10 @@ async def get_current_user_profile(
 # API Keys
 # ============================================
 
-@router.post("/api-keys", response_model=APIKeyResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/api-keys", response_model=APIKeyResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_api_key(
     data: APIKeyCreate,
     current_user: User = Depends(get_current_user),
@@ -343,11 +354,11 @@ async def create_api_key(
 ):
     """
     Create a new API key.
-    
+
     The key is only shown once in the response!
     """
     api_key, key_hash = generate_api_key()
-    
+
     api_key_obj = APIKey(
         user_id=current_user.id,
         key_hash=key_hash,
@@ -357,9 +368,9 @@ async def create_api_key(
     db.add(api_key_obj)
     await db.commit()
     await db.refresh(api_key_obj)
-    
+
     logger.info("api_key_created", user_id=current_user.id, key_name=data.name)
-    
+
     return APIKeyResponse(
         key=api_key,  # Only returned once
         name=api_key_obj.name,
@@ -375,9 +386,7 @@ async def list_api_keys(
     db: AsyncSession = Depends(get_db),
 ):
     """List user's API keys (without the actual keys)."""
-    result = await db.execute(
-        select(APIKey).where(APIKey.user_id == current_user.id)
-    )
+    result = await db.execute(select(APIKey).where(APIKey.user_id == current_user.id))
     return result.scalars().all()
 
 
@@ -395,18 +404,18 @@ async def delete_api_key(
         )
     )
     api_key = result.scalar_one_or_none()
-    
+
     if not api_key:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="API key not found",
         )
-    
+
     await db.delete(api_key)
     await db.commit()
-    
+
     logger.info("api_key_deleted", user_id=current_user.id, key_id=key_id)
-    
+
     return {"message": "API key deleted"}
 
 
@@ -414,20 +423,22 @@ async def delete_api_key(
 # Helper Functions
 # ============================================
 
+
 async def _create_token_response(user: User, db: AsyncSession) -> TokenResponse:
     """Create token response with access and refresh tokens."""
     access_token = create_access_token(user.id)
     refresh_token, token_hash = create_refresh_token(user.id)
-    
+
     # Store refresh token in database
     token_record = RefreshToken(
         user_id=user.id,
         token_hash=token_hash,
-        expires_at=datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
+        expires_at=datetime.now(timezone.utc)
+        + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
     )
     db.add(token_record)
     await db.commit()
-    
+
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -438,7 +449,7 @@ async def _create_token_response(user: User, db: AsyncSession) -> TokenResponse:
 async def _handle_oauth_user(user_info, db: AsyncSession) -> OAuthCallbackResponse:
     """Handle OAuth user - create or update user record."""
     is_new_user = False
-    
+
     # Check for existing user by OAuth ID
     result = await db.execute(
         select(User).where(
@@ -447,12 +458,12 @@ async def _handle_oauth_user(user_info, db: AsyncSession) -> OAuthCallbackRespon
         )
     )
     user = result.scalar_one_or_none()
-    
+
     if not user:
         # Check for existing user by email
         result = await db.execute(select(User).where(User.email == user_info.email))
         user = result.scalar_one_or_none()
-        
+
         if user:
             # Link OAuth to existing account
             user.oauth_provider = user_info.provider
@@ -470,22 +481,22 @@ async def _handle_oauth_user(user_info, db: AsyncSession) -> OAuthCallbackRespon
                 avatar_url=user_info.avatar_url,
             )
             db.add(user)
-    
+
     # Update last login
     user.last_login = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(user)
-    
+
     logger.info(
         "oauth_login",
         user_id=user.id,
         provider=user_info.provider,
         is_new_user=is_new_user,
     )
-    
+
     # Generate tokens
     token_response = await _create_token_response(user, db)
-    
+
     return OAuthCallbackResponse(
         access_token=token_response.access_token,
         refresh_token=token_response.refresh_token,

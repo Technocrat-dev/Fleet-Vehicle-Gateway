@@ -9,12 +9,14 @@ from pydantic import BaseModel, Field
 
 class GPSLocation(BaseModel):
     """GPS coordinates."""
+
     latitude: float = Field(..., ge=-90, le=90)
     longitude: float = Field(..., ge=-180, le=180)
 
 
 class VehicleTelemetry(BaseModel):
     """Single telemetry event from a vehicle."""
+
     vehicle_id: str
     timestamp: datetime
     occupancy_count: int = Field(..., ge=0, le=10)
@@ -25,7 +27,7 @@ class VehicleTelemetry(BaseModel):
     route_id: Optional[str] = None
     speed_kmh: Optional[float] = None
     heading_degrees: Optional[float] = None
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -38,13 +40,14 @@ class VehicleTelemetry(BaseModel):
                 "consent_status": "granted",
                 "route_id": "route-tokyo-ginza",
                 "speed_kmh": 35.5,
-                "heading_degrees": 90.0
+                "heading_degrees": 90.0,
             }
         }
 
 
 class VehicleStatus(BaseModel):
     """Current status of a vehicle."""
+
     vehicle_id: str
     last_seen: datetime
     occupancy_count: int
@@ -58,6 +61,7 @@ class VehicleStatus(BaseModel):
 
 class VehicleListResponse(BaseModel):
     """Response for listing vehicles."""
+
     vehicles: List[VehicleStatus]
     total: int
     timestamp: datetime
@@ -65,6 +69,7 @@ class VehicleListResponse(BaseModel):
 
 class FleetSummary(BaseModel):
     """Aggregated fleet statistics."""
+
     total_vehicles: int
     active_vehicles: int
     total_passengers: int
@@ -76,6 +81,7 @@ class FleetSummary(BaseModel):
 
 class OccupancyTrend(BaseModel):
     """Occupancy data point for trends."""
+
     timestamp: datetime
     vehicle_id: str
     occupancy_count: int
@@ -83,6 +89,7 @@ class OccupancyTrend(BaseModel):
 
 class LatencyMetric(BaseModel):
     """Latency data point."""
+
     timestamp: datetime
     vehicle_id: str
     latency_ms: float
@@ -90,6 +97,7 @@ class LatencyMetric(BaseModel):
 
 class AnalyticsResponse(BaseModel):
     """Response for analytics queries."""
+
     data: List[dict]
     query_time_ms: float
     count: int
