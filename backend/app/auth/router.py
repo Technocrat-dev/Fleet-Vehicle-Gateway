@@ -4,7 +4,7 @@ Authentication Router
 Endpoints for user registration, login, OAuth, and token management.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
@@ -123,7 +123,7 @@ async def login(
         )
     
     # Update last login
-    user.last_login = datetime.utcnow()
+    user.last_login = datetime.now(timezone.utc)
     await db.commit()
     
     logger.info("user_logged_in", user_id=user.id, email=user.email)
@@ -165,10 +165,10 @@ async def refresh_token(
         )
     
     # Check expiration
-    if token_record.expires_at < datetime.utcnow():
+    if token_record.expires_at < datetime.now(timezone.utc):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token expired",
+            detail="Invalid credentials",
         )
     
     # Get user
@@ -182,7 +182,7 @@ async def refresh_token(
         )
     
     # Update last used
-    token_record.last_used_at = datetime.utcnow()
+    token_record.last_used_at = datetime.now(timezone.utc)
     await db.commit()
     
     # Generate new access token
@@ -424,7 +424,7 @@ async def _create_token_response(user: User, db: AsyncSession) -> TokenResponse:
     token_record = RefreshToken(
         user_id=user.id,
         token_hash=token_hash,
-        expires_at=datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
+        expires_at=datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
     )
     db.add(token_record)
     await db.commit()
@@ -473,7 +473,7 @@ async def _handle_oauth_user(user_info, db: AsyncSession) -> OAuthCallbackRespon
             db.add(user)
     
     # Update last login
-    user.last_login = datetime.utcnow()
+    user.last_login = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(user)
     

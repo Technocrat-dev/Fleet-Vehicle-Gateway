@@ -5,7 +5,7 @@ FastAPI dependencies for authentication and authorization.
 """
 
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -46,7 +46,7 @@ async def get_current_user(
     if not payload:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
+            detail="Invalid credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
@@ -62,7 +62,7 @@ async def get_current_user(
     if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token payload",
+            detail="Invalid credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
@@ -73,7 +73,7 @@ async def get_current_user(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
+            detail="Invalid credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
@@ -150,14 +150,14 @@ async def verify_api_key(
         )
     
     # Check expiration
-    if api_key_obj.expires_at and api_key_obj.expires_at < datetime.utcnow():
+    if api_key_obj.expires_at and api_key_obj.expires_at < datetime.now(timezone.utc):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="API key expired",
+            detail="Invalid credentials",
         )
     
     # Update last used
-    api_key_obj.last_used_at = datetime.utcnow()
+    api_key_obj.last_used_at = datetime.now(timezone.utc)
     await db.commit()
     
     logger.debug("api_key_authenticated", key_name=api_key_obj.name, user_id=api_key_obj.user_id)

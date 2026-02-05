@@ -163,8 +163,15 @@ app.include_router(ws_router.router, tags=["WebSocket"])
 # Health check endpoints
 @app.get("/health", response_class=PlainTextResponse, include_in_schema=False)
 async def health_check():
-    """Kubernetes liveness probe."""
-    return "OK"
+    """Kubernetes liveness probe - includes database connectivity check."""
+    from app.core.database import engine
+    from sqlalchemy import text
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        return "OK"
+    except Exception:
+        return PlainTextResponse("UNHEALTHY", status_code=503)
 
 
 @app.get("/ready", response_class=PlainTextResponse, include_in_schema=False)
