@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
     Car, MapPin, Zap, Shield, BarChart3, Bell,
-    Users, Globe, ChevronRight, Play, Check,
+    Users, Globe, ChevronRight, Check,
     Wifi, Clock, TrendingUp, ArrowRight, Menu, X
 } from 'lucide-react'
 
@@ -115,11 +115,11 @@ export default function LandingPage() {
     ]
 
     const benefits = [
-        "Reduce fuel costs by 25%",
-        "Improve driver safety scores",
-        "Real-time vehicle diagnostics",
-        "Predictive maintenance alerts",
-        "Route optimization",
+        "Real-time vehicle tracking",
+        "AI-powered occupancy detection",
+        "Real-time telemetry streaming",
+        "GDPR-compliant data handling",
+        "Geofencing with alerts",
         "24/7 fleet visibility"
     ]
 
@@ -392,7 +392,11 @@ export default function LandingPage() {
                             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-3xl blur-3xl" />
                             <div className="relative bg-slate-800 rounded-2xl p-8 border border-slate-700">
                                 <div className="aspect-video bg-slate-700/50 rounded-xl flex items-center justify-center">
-                                    <Play className="w-16 h-16 text-white/50 hover:text-white transition-colors cursor-pointer" />
+                                    <div className="text-center">
+                                        <Zap className="w-12 h-12 text-blue-400 mx-auto mb-3" />
+                                        <p className="text-slate-400 text-sm">Edge AI + Cloud Analytics</p>
+                                        <p className="text-slate-500 text-xs mt-1">YOLOv11 + OpenVINO</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -447,10 +451,8 @@ export default function LandingPage() {
                             <span className="text-lg font-bold text-white">FleetGateway</span>
                         </div>
                         <div className="flex items-center gap-8 text-sm text-slate-400">
-                            <a href="#" className="hover:text-white transition-colors">Privacy</a>
-                            <a href="#" className="hover:text-white transition-colors">Terms</a>
-                            <a href="#" className="hover:text-white transition-colors">Documentation</a>
-                            <a href="#" className="hover:text-white transition-colors">Contact</a>
+                            <a href="https://github.com/Technocrat-dev/Fleet-Vehicle-Gateway" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">GitHub</a>
+                            <a href="https://github.com/Technocrat-dev/Fleet-Vehicle-Gateway#readme" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Documentation</a>
                         </div>
                         <div className="text-sm text-slate-500">
                             © 2024 FleetGateway. All rights reserved.

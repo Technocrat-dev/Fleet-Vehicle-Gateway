@@ -179,8 +179,8 @@ export function VehicleDetailDrawer({ vehicle, onClose }: VehicleDetailDrawerPro
                                     <div className="flex justify-between mb-1">
                                         <span className="text-slate-600 dark:text-slate-400">Safety Score</span>
                                         <span className={`font-bold ${vehicle.safety_score >= 80 ? 'text-green-600 dark:text-green-400' :
-                                                vehicle.safety_score >= 60 ? 'text-yellow-600 dark:text-yellow-400' :
-                                                    'text-red-600 dark:text-red-400'
+                                            vehicle.safety_score >= 60 ? 'text-yellow-600 dark:text-yellow-400' :
+                                                'text-red-600 dark:text-red-400'
                                             }`}>
                                             {vehicle.safety_score.toFixed(0)}/100
                                         </span>
@@ -188,8 +188,8 @@ export function VehicleDetailDrawer({ vehicle, onClose }: VehicleDetailDrawerPro
                                     <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
                                         <div
                                             className={`h-2 rounded-full transition-all ${vehicle.safety_score >= 80 ? 'bg-green-500' :
-                                                    vehicle.safety_score >= 60 ? 'bg-yellow-500' :
-                                                        'bg-red-500'
+                                                vehicle.safety_score >= 60 ? 'bg-yellow-500' :
+                                                    'bg-red-500'
                                                 }`}
                                             style={{ width: `${vehicle.safety_score}%` }}
                                         />
@@ -217,15 +217,7 @@ export function VehicleDetailDrawer({ vehicle, onClose }: VehicleDetailDrawerPro
                         </div>
                     )}
 
-                    {/* Actions */}
-                    <div className="flex gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
-                        <button className="flex-1 px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium transition-colors">
-                            View History
-                        </button>
-                        <button className="flex-1 px-4 py-3 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-white rounded-xl font-medium transition-colors">
-                            Send Alert
-                        </button>
-                    </div>
+                    {/* Note: Additional vehicle actions can be added here */}
                 </div>
             </div>
         </>

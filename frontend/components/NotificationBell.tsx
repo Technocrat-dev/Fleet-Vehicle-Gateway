@@ -200,18 +200,6 @@ export function NotificationBell({ apiUrl = 'http://localhost:8000' }: Notificat
                                 ))
                             )}
                         </div>
-
-                        {/* Footer */}
-                        {alerts.length > 0 && (
-                            <div className="px-4 py-2 bg-slate-50 dark:bg-slate-700 border-t border-slate-200 dark:border-slate-600">
-                                <a
-                                    href="/alerts"
-                                    className="text-sm text-blue-500 hover:text-blue-600 font-medium"
-                                >
-                                    View all notifications →
-                                </a>
-                            </div>
-                        )}
                     </div>
                 </>
             )}
