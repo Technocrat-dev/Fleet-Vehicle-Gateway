@@ -30,6 +30,7 @@ from app.core.logging import setup_logging, get_logger, RequestContext
 from app.api import vehicles, analytics, websocket as ws_router
 from app.api.geofencing import router as geofencing_router
 from app.api.users import router as users_router
+from app.api.privacy import router as privacy_router
 from app.auth.router import router as auth_router
 from app.services.telemetry_hub import TelemetryHub
 from app.services.kafka_consumer import TelemetryConsumer
@@ -163,9 +164,6 @@ app.include_router(analytics.router, prefix="/api", tags=["Analytics"])
 app.include_router(ws_router.router, tags=["WebSocket"])
 app.include_router(geofencing_router, prefix="/api", tags=["Geofencing"])
 app.include_router(users_router, prefix="/api/users", tags=["Users"])
-
-# Privacy API (GDPR compliance)
-from app.api.privacy import router as privacy_router
 app.include_router(privacy_router, prefix="/api", tags=["Privacy"])
 
 
