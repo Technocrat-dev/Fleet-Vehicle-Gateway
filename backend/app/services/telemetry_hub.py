@@ -20,6 +20,7 @@ try:
         ConsentStatus,
         AnonymizationLevel,
     )
+
     PRIVACY_ENGINE_AVAILABLE = True
 except ImportError:
     PRIVACY_ENGINE_AVAILABLE = False
@@ -61,11 +62,11 @@ class TelemetryHub:
         self._history: List[VehicleTelemetry] = []
         self._history_max_size = 10000  # Keep last 10k messages
         self._lock = asyncio.Lock()
-        
+
         # Privacy engine integration
         self.privacy_enabled = enable_privacy and PRIVACY_ENGINE_AVAILABLE
         self.privacy_engine: Optional[PrivacyEngine] = None
-        
+
         if self.privacy_enabled:
             policy = PrivacyPolicy(
                 retention_days=30,
@@ -83,22 +84,28 @@ class TelemetryHub:
         Updates state, applies privacy filtering, and broadcasts to WebSocket clients.
         """
         vehicle_id = telemetry.vehicle_id
-        
+
         # Apply privacy filtering if enabled
         if self.privacy_enabled and self.privacy_engine:
             # Update consent status in privacy engine
-            consent = ConsentStatus.GRANTED if telemetry.consent_status == "granted" else ConsentStatus.PENDING
+            consent = (
+                ConsentStatus.GRANTED
+                if telemetry.consent_status == "granted"
+                else ConsentStatus.PENDING
+            )
             self.privacy_engine.set_consent(vehicle_id, consent)
-            
+
             # Process through privacy engine
             telemetry_dict = telemetry.model_dump()
-            processed = self.privacy_engine.process_telemetry(telemetry_dict, vehicle_id)
-            
+            processed = self.privacy_engine.process_telemetry(
+                telemetry_dict, vehicle_id
+            )
+
             if processed is None:
                 # Data was filtered out due to privacy policy
                 self.messages_filtered += 1
                 return
-        
+
         async with self._lock:
             if vehicle_id in self.vehicles:
                 self.vehicles[vehicle_id].last_telemetry = telemetry
@@ -233,11 +240,11 @@ class TelemetryHub:
             "history_size": len(self._history),
             "privacy_enabled": self.privacy_enabled,
         }
-        
+
         # Add privacy engine stats if available
         if self.privacy_enabled and self.privacy_engine:
             stats["privacy_stats"] = self.privacy_engine.get_privacy_stats()
-        
+
         return stats
 
     def get_privacy_audit_log(self, vehicle_id: str = None, limit: int = 100) -> list:

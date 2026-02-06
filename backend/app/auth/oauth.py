@@ -20,10 +20,10 @@ _providers_registered = False
 def _ensure_providers_registered():
     """Lazy initialization of OAuth providers to use runtime env vars."""
     global _providers_registered
-    
+
     if _providers_registered:
         return
-    
+
     # Register Google OAuth
     if settings.GOOGLE_CLIENT_ID and settings.GOOGLE_CLIENT_SECRET:
         oauth.register(
@@ -45,7 +45,7 @@ def _ensure_providers_registered():
             api_base_url="https://api.github.com/",
             client_kwargs={"scope": "user:email"},
         )
-    
+
     _providers_registered = True
 
 
@@ -65,7 +65,7 @@ async def get_google_user_info(token: dict) -> OAuthUserInfo:
 async def get_github_user_info(request: Request, token: dict) -> OAuthUserInfo:
     """Extract user info from GitHub OAuth token."""
     _ensure_providers_registered()
-    
+
     # Get user profile
     client = oauth.github
     resp = await client.get("user", token=token)

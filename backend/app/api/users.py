@@ -15,7 +15,6 @@ from app.auth.dependencies import get_current_user, get_db
 from app.models.db_models import User, UserRole
 from app.core.permissions import require_admin
 
-
 router = APIRouter()
 
 
@@ -86,10 +85,10 @@ async def update_current_user_profile(
         current_user.full_name = data.full_name
     if data.avatar_url is not None:
         current_user.avatar_url = data.avatar_url
-    
+
     await db.commit()
     await db.refresh(current_user)
-    
+
     return UserProfile(
         id=current_user.id,
         email=current_user.email,
@@ -110,11 +109,9 @@ async def list_users(
     db: AsyncSession = Depends(get_db),
 ):
     """List all users. Admin only."""
-    result = await db.execute(
-        select(User).order_by(User.created_at.desc())
-    )
+    result = await db.execute(select(User).order_by(User.created_at.desc()))
     users = result.scalars().all()
-    
+
     return [
         UserListResponse(
             id=u.id,
@@ -141,34 +138,28 @@ async def update_user_role(
     if data.role not in valid_roles:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid role. Must be one of: {', '.join(valid_roles)}"
+            detail=f"Invalid role. Must be one of: {', '.join(valid_roles)}",
         )
-    
+
     # Can't modify own role
     if user_id == current_user.id:
-        raise HTTPException(
-            status_code=400,
-            detail="Cannot modify your own role"
-        )
-    
+        raise HTTPException(status_code=400, detail="Cannot modify your own role")
+
     # Find user
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
-    
+
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     # Can't modify superuser
     if user.is_superuser:
-        raise HTTPException(
-            status_code=400,
-            detail="Cannot modify superuser role"
-        )
-    
+        raise HTTPException(status_code=400, detail="Cannot modify superuser role")
+
     user.role = data.role
     await db.commit()
     await db.refresh(user)
-    
+
     return UserListResponse(
         id=user.id,
         email=user.email,
@@ -188,16 +179,16 @@ async def activate_user(
     """Activate a user. Admin only."""
     if user_id == current_user.id:
         raise HTTPException(status_code=400, detail="Cannot modify your own status")
-    
+
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
-    
+
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     user.is_active = True
     await db.commit()
-    
+
     return {"detail": f"User {user.email} activated"}
 
 
@@ -210,17 +201,17 @@ async def deactivate_user(
     """Deactivate a user. Admin only."""
     if user_id == current_user.id:
         raise HTTPException(status_code=400, detail="Cannot deactivate yourself")
-    
+
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
-    
+
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     if user.is_superuser:
         raise HTTPException(status_code=400, detail="Cannot deactivate superuser")
-    
+
     user.is_active = False
     await db.commit()
-    
+
     return {"detail": f"User {user.email} deactivated"}

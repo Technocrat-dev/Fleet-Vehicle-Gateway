@@ -16,15 +16,27 @@ class GPSLocation(BaseModel):
 
 class DriverBehavior(BaseModel):
     """Driver behavior metrics for safety monitoring."""
-    
+
     driver_id: Optional[str] = None
-    acceleration_ms2: float = Field(default=0.0, description="Current acceleration in m/s²")
-    braking_intensity: float = Field(default=0.0, ge=0.0, le=1.0, description="Braking intensity 0-1")
-    is_idling: bool = Field(default=False, description="Vehicle is stationary with engine on")
+    acceleration_ms2: float = Field(
+        default=0.0, description="Current acceleration in m/s²"
+    )
+    braking_intensity: float = Field(
+        default=0.0, ge=0.0, le=1.0, description="Braking intensity 0-1"
+    )
+    is_idling: bool = Field(
+        default=False, description="Vehicle is stationary with engine on"
+    )
     is_speeding: bool = Field(default=False, description="Vehicle exceeds speed limit")
-    harsh_braking_event: bool = Field(default=False, description="Harsh braking detected")
-    rapid_acceleration_event: bool = Field(default=False, description="Rapid acceleration detected")
-    safety_score: float = Field(default=100.0, ge=0.0, le=100.0, description="Driver safety score 0-100")
+    harsh_braking_event: bool = Field(
+        default=False, description="Harsh braking detected"
+    )
+    rapid_acceleration_event: bool = Field(
+        default=False, description="Rapid acceleration detected"
+    )
+    safety_score: float = Field(
+        default=100.0, ge=0.0, le=100.0, description="Driver safety score 0-100"
+    )
 
 
 class VehicleTelemetry(BaseModel):
@@ -40,7 +52,7 @@ class VehicleTelemetry(BaseModel):
     route_id: Optional[str] = None
     speed_kmh: Optional[float] = None
     heading_degrees: Optional[float] = None
-    
+
     # Driver behavior fields
     driver_behavior: Optional[DriverBehavior] = None
 
@@ -65,8 +77,8 @@ class VehicleTelemetry(BaseModel):
                     "is_speeding": False,
                     "harsh_braking_event": False,
                     "rapid_acceleration_event": False,
-                    "safety_score": 95.0
-                }
+                    "safety_score": 95.0,
+                },
             }
         }
 
@@ -83,13 +95,12 @@ class VehicleStatus(BaseModel):
     route_id: Optional[str] = None
     speed_kmh: Optional[float] = None
     is_active: bool = True
-    
+
     # Driver behavior fields
     driver_id: Optional[str] = None
     safety_score: Optional[float] = None
     is_speeding: bool = False
     is_idling: bool = False
-
 
 
 class VehicleListResponse(BaseModel):

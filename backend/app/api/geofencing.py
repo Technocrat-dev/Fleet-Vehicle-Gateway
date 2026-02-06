@@ -20,7 +20,6 @@ from app.auth.dependencies import get_current_user, get_db
 from app.models.db_models import User, Geofence, Alert
 from app.core.permissions import require_manager, require_admin
 
-
 router = APIRouter()
 
 
@@ -83,24 +82,26 @@ def point_in_polygon(lat: float, lng: float, polygon: dict) -> bool:
     """
     if polygon.get("type") != "Polygon":
         return False
-    
+
     coordinates = polygon.get("coordinates", [[]])
     if not coordinates or not coordinates[0]:
         return False
-    
+
     ring = coordinates[0]  # Outer ring
     n = len(ring)
     inside = False
-    
+
     j = n - 1
     for i in range(n):
         xi, yi = ring[i][0], ring[i][1]  # lng, lat in GeoJSON
         xj, yj = ring[j][0], ring[j][1]
-        
-        if ((yi > lat) != (yj > lat)) and (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi):
+
+        if ((yi > lat) != (yj > lat)) and (
+            lng < (xj - xi) * (lat - yi) / (yj - yi) + xi
+        ):
             inside = not inside
         j = i
-    
+
     return inside
 
 
@@ -114,11 +115,13 @@ async def create_geofence(
     """Create a new geofence. Requires manager or admin role."""
     # Validate polygon format
     if data.polygon.get("type") != "Polygon":
-        raise HTTPException(status_code=400, detail="Invalid polygon format. Must be GeoJSON Polygon.")
-    
+        raise HTTPException(
+            status_code=400, detail="Invalid polygon format. Must be GeoJSON Polygon."
+        )
+
     if not data.polygon.get("coordinates"):
         raise HTTPException(status_code=400, detail="Polygon must have coordinates.")
-    
+
     geofence = Geofence(
         user_id=current_user.id,
         name=data.name,
@@ -128,11 +131,11 @@ async def create_geofence(
         alert_on_exit=data.alert_on_exit,
         color=data.color,
     )
-    
+
     db.add(geofence)
     await db.commit()
     await db.refresh(geofence)
-    
+
     return GeofenceResponse(
         id=geofence.id,
         name=geofence.name,
@@ -155,14 +158,14 @@ async def list_geofences(
 ):
     """List all geofences for the current user."""
     query = select(Geofence).where(Geofence.user_id == current_user.id)
-    
+
     if active_only:
         query = query.where(Geofence.is_active)
-    
+
     query = query.order_by(Geofence.created_at.desc())
     result = await db.execute(query)
     geofences = result.scalars().all()
-    
+
     return [
         GeofenceResponse(
             id=g.id,
@@ -194,10 +197,10 @@ async def get_geofence(
         )
     )
     geofence = result.scalar_one_or_none()
-    
+
     if not geofence:
         raise HTTPException(status_code=404, detail="Geofence not found")
-    
+
     return GeofenceResponse(
         id=geofence.id,
         name=geofence.name,
@@ -227,10 +230,10 @@ async def update_geofence(
         )
     )
     geofence = result.scalar_one_or_none()
-    
+
     if not geofence:
         raise HTTPException(status_code=404, detail="Geofence not found")
-    
+
     # Update fields
     if data.name is not None:
         geofence.name = data.name
@@ -248,10 +251,10 @@ async def update_geofence(
         geofence.color = data.color
     if data.is_active is not None:
         geofence.is_active = data.is_active
-    
+
     await db.commit()
     await db.refresh(geofence)
-    
+
     return GeofenceResponse(
         id=geofence.id,
         name=geofence.name,
@@ -280,13 +283,13 @@ async def delete_geofence(
         )
     )
     geofence = result.scalar_one_or_none()
-    
+
     if not geofence:
         raise HTTPException(status_code=404, detail="Geofence not found")
-    
+
     await db.delete(geofence)
     await db.commit()
-    
+
     return {"detail": "Geofence deleted successfully"}
 
 
@@ -300,14 +303,14 @@ async def list_alerts(
 ):
     """List alerts for the current user."""
     query = select(Alert).where(Alert.user_id == current_user.id)
-    
+
     if unread_only:
         query = query.where(~Alert.is_read)
-    
+
     query = query.order_by(Alert.created_at.desc()).limit(limit)
     result = await db.execute(query)
     alerts = result.scalars().all()
-    
+
     return [
         AlertResponse(
             id=a.id,
@@ -332,7 +335,7 @@ async def get_unread_count(
 ):
     """Get count of unread alerts."""
     from sqlalchemy import func
-    
+
     result = await db.execute(
         select(func.count(Alert.id)).where(
             Alert.user_id == current_user.id,
@@ -340,7 +343,7 @@ async def get_unread_count(
         )
     )
     count = result.scalar() or 0
-    
+
     return {"unread_count": count}
 
 
@@ -358,13 +361,13 @@ async def mark_alert_read(
         )
     )
     alert = result.scalar_one_or_none()
-    
+
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
-    
+
     alert.is_read = True
     await db.commit()
-    
+
     return {"detail": "Alert marked as read"}
 
 
@@ -382,15 +385,15 @@ async def acknowledge_alert(
         )
     )
     alert = result.scalar_one_or_none()
-    
+
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
-    
+
     alert.is_read = True
     alert.is_acknowledged = True
     alert.acknowledged_at = datetime.now(timezone.utc)
     await db.commit()
-    
+
     return {"detail": "Alert acknowledged"}
 
 
@@ -401,14 +404,14 @@ async def mark_all_alerts_read(
 ):
     """Mark all alerts as read."""
     from sqlalchemy import update
-    
+
     await db.execute(
         update(Alert)
         .where(Alert.user_id == current_user.id, ~Alert.is_read)
         .values(is_read=True)
     )
     await db.commit()
-    
+
     return {"detail": "All alerts marked as read"}
 
 
@@ -426,13 +429,13 @@ async def delete_alert(
         )
     )
     alert = result.scalar_one_or_none()
-    
+
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
-    
+
     await db.delete(alert)
     await db.commit()
-    
+
     return {"detail": "Alert deleted"}
 
 
@@ -457,18 +460,20 @@ async def check_geofences(
         )
     )
     geofences = result.scalars().all()
-    
+
     inside_geofences = []
     for geofence in geofences:
         polygon = json.loads(geofence.polygon)
         if point_in_polygon(latitude, longitude, polygon):
-            inside_geofences.append({
-                "id": geofence.id,
-                "name": geofence.name,
-                "alert_on_enter": geofence.alert_on_enter,
-                "alert_on_exit": geofence.alert_on_exit,
-            })
-    
+            inside_geofences.append(
+                {
+                    "id": geofence.id,
+                    "name": geofence.name,
+                    "alert_on_enter": geofence.alert_on_enter,
+                    "alert_on_exit": geofence.alert_on_exit,
+                }
+            )
+
     return {
         "vehicle_id": vehicle_id,
         "latitude": latitude,
