@@ -68,9 +68,11 @@ class Settings(BaseSettings):
     SIMULATOR_DEMO_MODE: bool = True
 
     class Config:
+        # .env file is optional - Railway uses environment variables directly
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = True
+        extra = "ignore"
 
 
 # Global settings instance
