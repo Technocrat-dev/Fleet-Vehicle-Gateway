@@ -10,22 +10,25 @@ Provides REST API endpoints for privacy management:
 from typing import Optional
 from datetime import datetime
 
-from fastapi import APIRouter, Query, HTTPException
-
-from app.core.dependencies import get_telemetry_hub
+from fastapi import APIRouter, Query, HTTPException, Request
 
 router = APIRouter(prefix="/privacy", tags=["privacy"])
 
 
+def get_hub(request: Request):
+    """Get telemetry hub from app state."""
+    return request.app.state.telemetry_hub
+
+
 @router.get("/stats")
-async def get_privacy_stats():
+async def get_privacy_stats(request: Request):
     """
     Get privacy engine statistics.
 
     Returns:
         Privacy metrics including consent breakdown and audit log size
     """
-    hub = get_telemetry_hub()
+    hub = get_hub(request)
 
     if not hub.privacy_enabled:
         return {"privacy_enabled": False, "message": "Privacy engine is not enabled"}
@@ -40,6 +43,7 @@ async def get_privacy_stats():
 
 @router.get("/audit-log")
 async def get_audit_log(
+    request: Request,
     vehicle_id: Optional[str] = Query(None, description="Filter by vehicle ID"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum entries to return"),
 ):
@@ -53,7 +57,7 @@ async def get_audit_log(
     Returns:
         List of audit log entries with timestamps and operations
     """
-    hub = get_telemetry_hub()
+    hub = get_hub(request)
 
     if not hub.privacy_enabled:
         raise HTTPException(status_code=503, detail="Privacy engine is not enabled")
@@ -78,7 +82,7 @@ async def get_audit_log(
 
 
 @router.get("/dsar/{vehicle_id}")
-async def get_data_subject_report(vehicle_id: str):
+async def get_data_subject_report(vehicle_id: str, request: Request):
     """
     Generate GDPR Data Subject Access Request (DSAR) report.
 
@@ -91,7 +95,7 @@ async def get_data_subject_report(vehicle_id: str):
     Returns:
         Complete DSAR report including consent status and processing history
     """
-    hub = get_telemetry_hub()
+    hub = get_hub(request)
 
     if not hub.privacy_enabled:
         raise HTTPException(status_code=503, detail="Privacy engine is not enabled")
@@ -105,7 +109,7 @@ async def get_data_subject_report(vehicle_id: str):
 
 
 @router.get("/consent/{vehicle_id}")
-async def get_consent_status(vehicle_id: str):
+async def get_consent_status(vehicle_id: str, request: Request):
     """
     Get consent status for a specific vehicle.
 
@@ -115,7 +119,7 @@ async def get_consent_status(vehicle_id: str):
     Returns:
         Current consent status
     """
-    hub = get_telemetry_hub()
+    hub = get_hub(request)
 
     if not hub.privacy_enabled or not hub.privacy_engine:
         raise HTTPException(status_code=503, detail="Privacy engine is not enabled")
@@ -130,14 +134,14 @@ async def get_consent_status(vehicle_id: str):
 
 
 @router.get("/retention-policy")
-async def get_retention_policy():
+async def get_retention_policy(request: Request):
     """
     Get current data retention policy configuration.
 
     Returns:
         Retention policy settings
     """
-    hub = get_telemetry_hub()
+    hub = get_hub(request)
 
     if not hub.privacy_enabled or not hub.privacy_engine:
         return {"privacy_enabled": False, "message": "Privacy engine is not enabled"}
