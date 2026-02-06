@@ -50,6 +50,17 @@ body {
   height: 100%;
   width: 100%;
   border-radius: 0.5rem;
+  z-index: 0 !important;
+}
+
+/* Ensure Leaflet controls don't escape the map container */
+.leaflet-pane,
+.leaflet-control-container {
+  z-index: 1 !important;
+}
+
+.leaflet-popup-pane {
+  z-index: 2 !important;
 }
 
 /* Vehicle marker pulse animation */

@@ -77,7 +77,7 @@ export default function FleetMap({ vehicles, onVehicleClick }: FleetMapProps) {
     }
 
     return (
-        <div className="h-[400px] rounded-xl overflow-hidden">
+        <div className="h-[400px] rounded-xl overflow-hidden relative z-0">
             <MapContainer
                 center={defaultCenter}
                 zoom={12}
