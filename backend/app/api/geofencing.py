@@ -2,6 +2,10 @@
 Geofencing API - Endpoints for managing geofences and alerts.
 
 All endpoints require authentication.
+Role-based access:
+- Viewers: Can read geofences and alerts
+- Managers: Can create and edit geofences
+- Admins: Can delete geofences and manage all alerts
 """
 
 import json
@@ -13,7 +17,8 @@ from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user, get_db
-from app.models.db_models import User, Geofence, Alert
+from app.models.db_models import User, Geofence, Alert, UserRole
+from app.core.permissions import require_role, require_manager, require_admin
 
 
 router = APIRouter()
@@ -103,10 +108,10 @@ def point_in_polygon(lat: float, lng: float, polygon: dict) -> bool:
 @router.post("/geofences", response_model=GeofenceResponse)
 async def create_geofence(
     data: GeofenceCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_manager),  # Managers+ can create
     db: AsyncSession = Depends(get_db),
 ):
-    """Create a new geofence."""
+    """Create a new geofence. Requires manager or admin role."""
     # Validate polygon format
     if data.polygon.get("type") != "Polygon":
         raise HTTPException(status_code=400, detail="Invalid polygon format. Must be GeoJSON Polygon.")
@@ -211,10 +216,10 @@ async def get_geofence(
 async def update_geofence(
     geofence_id: int,
     data: GeofenceUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_manager),  # Managers+ can update
     db: AsyncSession = Depends(get_db),
 ):
-    """Update a geofence."""
+    """Update a geofence. Requires manager or admin role."""
     result = await db.execute(
         select(Geofence).where(
             Geofence.id == geofence_id,
@@ -264,10 +269,10 @@ async def update_geofence(
 @router.delete("/geofences/{geofence_id}")
 async def delete_geofence(
     geofence_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_admin),  # Only admins can delete
     db: AsyncSession = Depends(get_db),
 ):
-    """Delete a geofence."""
+    """Delete a geofence. Requires admin role."""
     result = await db.execute(
         select(Geofence).where(
             Geofence.id == geofence_id,

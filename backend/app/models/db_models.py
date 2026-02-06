@@ -6,6 +6,7 @@ SQLAlchemy ORM models for the Fleet Vehicle Gateway.
 
 from datetime import datetime, timezone
 from typing import Optional
+from enum import Enum as PyEnum
 from sqlalchemy import (
     String,
     Integer,
@@ -15,10 +16,18 @@ from sqlalchemy import (
     ForeignKey,
     Text,
     Index,
+    Enum,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+
+
+class UserRole(str, PyEnum):
+    """User roles for access control."""
+    ADMIN = "admin"
+    MANAGER = "manager"
+    VIEWER = "viewer"
 
 
 class User(Base):
@@ -41,6 +50,11 @@ class User(Base):
     )  # google, github
     oauth_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     avatar_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+
+    # Role-based access control
+    role: Mapped[str] = mapped_column(
+        String(20), default=UserRole.VIEWER.value, nullable=False
+    )
 
     # Status
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)

@@ -164,6 +164,10 @@ app.include_router(ws_router.router, tags=["WebSocket"])
 from app.api.geofencing import router as geofencing_router
 app.include_router(geofencing_router, prefix="/api", tags=["Geofencing"])
 
+# Users router
+from app.api.users import router as users_router
+app.include_router(users_router, prefix="/api/users", tags=["Users"])
+
 
 
 # Health check endpoints
