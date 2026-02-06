@@ -164,6 +164,9 @@ app.include_router(ws_router.router, tags=["WebSocket"])
 app.include_router(geofencing_router, prefix="/api", tags=["Geofencing"])
 app.include_router(users_router, prefix="/api/users", tags=["Users"])
 
+# Privacy API (GDPR compliance)
+from app.api.privacy import router as privacy_router
+app.include_router(privacy_router, prefix="/api", tags=["Privacy"])
 
 
 # Health check endpoints

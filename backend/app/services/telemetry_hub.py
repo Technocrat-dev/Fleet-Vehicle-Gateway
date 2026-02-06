@@ -2,6 +2,7 @@
 Telemetry Hub - Central service for managing vehicle telemetry.
 
 Maintains current state of all vehicles and broadcasts updates to WebSocket clients.
+Integrates with Privacy Engine for GDPR-compliant data processing.
 """
 
 import asyncio
@@ -10,6 +11,19 @@ from typing import Dict, List, Set, Optional
 from dataclasses import dataclass
 
 from app.models.telemetry import VehicleTelemetry, VehicleStatus, FleetSummary
+
+# Import privacy engine
+try:
+    from app.services.privacy_engine import (
+        PrivacyEngine,
+        PrivacyPolicy,
+        ConsentStatus,
+        AnonymizationLevel,
+    )
+    PRIVACY_ENGINE_AVAILABLE = True
+except ImportError:
+    PRIVACY_ENGINE_AVAILABLE = False
+    print("⚠️  Privacy engine not available")
 
 
 @dataclass
@@ -31,25 +45,61 @@ class TelemetryHub:
     - Track telemetry history for analytics
     - Broadcast updates to WebSocket clients
     - Provide aggregated statistics
+    - Apply privacy filtering via Privacy Engine
     """
 
-    def __init__(self, inactive_threshold_seconds: int = 30):
+    def __init__(
+        self,
+        inactive_threshold_seconds: int = 30,
+        enable_privacy: bool = True,
+    ):
         self.vehicles: Dict[str, VehicleState] = {}
         self.websocket_clients: Set = set()
         self.messages_processed: int = 0
+        self.messages_filtered: int = 0
         self.inactive_threshold = timedelta(seconds=inactive_threshold_seconds)
         self._history: List[VehicleTelemetry] = []
         self._history_max_size = 10000  # Keep last 10k messages
         self._lock = asyncio.Lock()
+        
+        # Privacy engine integration
+        self.privacy_enabled = enable_privacy and PRIVACY_ENGINE_AVAILABLE
+        self.privacy_engine: Optional[PrivacyEngine] = None
+        
+        if self.privacy_enabled:
+            policy = PrivacyPolicy(
+                retention_days=30,
+                anonymization_level=AnonymizationLevel.PARTIAL,
+                require_consent_for_storage=False,  # Allow storage but apply anonymization
+                require_consent_for_analytics=False,
+                allow_aggregated_without_consent=True,
+            )
+            self.privacy_engine = PrivacyEngine(policy)
+            print("🔒 Privacy Engine enabled")
 
     async def process_telemetry(self, telemetry: VehicleTelemetry):
         """
         Process incoming telemetry from a vehicle.
-        Updates state and broadcasts to WebSocket clients.
+        Updates state, applies privacy filtering, and broadcasts to WebSocket clients.
         """
+        vehicle_id = telemetry.vehicle_id
+        
+        # Apply privacy filtering if enabled
+        if self.privacy_enabled and self.privacy_engine:
+            # Update consent status in privacy engine
+            consent = ConsentStatus.GRANTED if telemetry.consent_status == "granted" else ConsentStatus.PENDING
+            self.privacy_engine.set_consent(vehicle_id, consent)
+            
+            # Process through privacy engine
+            telemetry_dict = telemetry.model_dump()
+            processed = self.privacy_engine.process_telemetry(telemetry_dict, vehicle_id)
+            
+            if processed is None:
+                # Data was filtered out due to privacy policy
+                self.messages_filtered += 1
+                return
+        
         async with self._lock:
-            vehicle_id = telemetry.vehicle_id
-
             if vehicle_id in self.vehicles:
                 self.vehicles[vehicle_id].last_telemetry = telemetry
                 self.vehicles[vehicle_id].last_updated = datetime.now(timezone.utc)
@@ -172,15 +222,35 @@ class TelemetryHub:
     def get_stats(self) -> dict:
         """Get hub statistics for monitoring."""
         summary = self.get_fleet_summary()
-        return {
+        stats = {
             "vehicle_count": summary.total_vehicles,
             "active_vehicles": summary.active_vehicles,
             "total_passengers": summary.total_passengers,
             "messages_processed": self.messages_processed,
+            "messages_filtered": self.messages_filtered,
             "websocket_connections": len(self.websocket_clients),
             "avg_latency_ms": summary.average_latency_ms,
             "history_size": len(self._history),
+            "privacy_enabled": self.privacy_enabled,
         }
+        
+        # Add privacy engine stats if available
+        if self.privacy_enabled and self.privacy_engine:
+            stats["privacy_stats"] = self.privacy_engine.get_privacy_stats()
+        
+        return stats
+
+    def get_privacy_audit_log(self, vehicle_id: str = None, limit: int = 100) -> list:
+        """Get privacy audit log entries."""
+        if not self.privacy_enabled or not self.privacy_engine:
+            return []
+        return self.privacy_engine.get_audit_log(vehicle_id=vehicle_id, limit=limit)
+
+    def get_data_subject_report(self, vehicle_id: str) -> dict:
+        """Generate GDPR data subject access report for a vehicle."""
+        if not self.privacy_enabled or not self.privacy_engine:
+            return {"error": "Privacy engine not enabled"}
+        return self.privacy_engine.generate_data_subject_report(vehicle_id)
 
     def is_healthy(self) -> bool:
         """Check if the hub is operational."""
