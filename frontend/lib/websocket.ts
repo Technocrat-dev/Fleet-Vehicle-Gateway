@@ -33,6 +33,11 @@ export interface VehicleStatus {
     route_id?: string
     speed_kmh?: number
     is_active: boolean
+    // Driver behavior fields
+    driver_id?: string
+    safety_score?: number
+    is_speeding?: boolean
+    is_idling?: boolean
 }
 
 export interface FleetSummary {
@@ -102,6 +107,11 @@ export function useFleetWebSocket(wsUrl: string): UseWebSocketReturn {
                                 route_id: data.route_id,
                                 speed_kmh: data.speed_kmh,
                                 is_active: true,
+                                // Driver behavior fields
+                                driver_id: data.driver_behavior?.driver_id,
+                                safety_score: data.driver_behavior?.safety_score,
+                                is_speeding: data.driver_behavior?.is_speeding ?? false,
+                                is_idling: data.driver_behavior?.is_idling ?? false,
                             })
                             return updated
                         })

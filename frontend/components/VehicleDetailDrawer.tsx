@@ -62,8 +62,8 @@ export function VehicleDetailDrawer({ vehicle, onClose }: VehicleDetailDrawerPro
                     {/* Status Badge */}
                     <div className="flex items-center gap-2">
                         <span className={`px-3 py-1 rounded-full text-sm font-medium ${vehicle.is_active
-                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-400'
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-400'
                             }`}>
                             {vehicle.is_active ? 'Active' : 'Inactive'}
                         </span>
@@ -156,6 +156,66 @@ export function VehicleDetailDrawer({ vehicle, onClose }: VehicleDetailDrawerPro
                         <Clock className="w-4 h-4" />
                         <span>Last seen: {new Date(vehicle.last_seen).toLocaleTimeString()}</span>
                     </div>
+
+                    {/* Driver Safety Section */}
+                    {(vehicle.safety_score !== undefined || vehicle.driver_id) && (
+                        <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-4">
+                            <div className="flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 mb-3">
+                                <Shield className="w-4 h-4" />
+                                <span className="font-medium">Driver Safety</span>
+                            </div>
+
+                            {vehicle.driver_id && (
+                                <div className="flex justify-between mb-2">
+                                    <span className="text-slate-600 dark:text-slate-400">Driver</span>
+                                    <span className="font-medium text-slate-800 dark:text-white">
+                                        {vehicle.driver_id}
+                                    </span>
+                                </div>
+                            )}
+
+                            {vehicle.safety_score !== undefined && (
+                                <div className="mb-3">
+                                    <div className="flex justify-between mb-1">
+                                        <span className="text-slate-600 dark:text-slate-400">Safety Score</span>
+                                        <span className={`font-bold ${vehicle.safety_score >= 80 ? 'text-green-600 dark:text-green-400' :
+                                                vehicle.safety_score >= 60 ? 'text-yellow-600 dark:text-yellow-400' :
+                                                    'text-red-600 dark:text-red-400'
+                                            }`}>
+                                            {vehicle.safety_score.toFixed(0)}/100
+                                        </span>
+                                    </div>
+                                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                                        <div
+                                            className={`h-2 rounded-full transition-all ${vehicle.safety_score >= 80 ? 'bg-green-500' :
+                                                    vehicle.safety_score >= 60 ? 'bg-yellow-500' :
+                                                        'bg-red-500'
+                                                }`}
+                                            style={{ width: `${vehicle.safety_score}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex items-center gap-3">
+                                {vehicle.is_speeding && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-full text-xs font-medium">
+                                        ⚠️ Speeding
+                                    </span>
+                                )}
+                                {vehicle.is_idling && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full text-xs font-medium">
+                                        🛑 Idling
+                                    </span>
+                                )}
+                                {!vehicle.is_speeding && !vehicle.is_idling && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-medium">
+                                        ✓ Good Driving
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Actions */}
                     <div className="flex gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
