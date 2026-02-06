@@ -5,7 +5,7 @@ Role-based access control permissions for the Fleet Vehicle Gateway.
 from typing import List
 from fastapi import Depends, HTTPException, status
 
-from app.core.auth import get_current_user
+from app.auth.dependencies import get_current_user
 from app.models.db_models import User, UserRole
 
 # Role hierarchy - higher roles include permissions of lower roles
