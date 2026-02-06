@@ -455,7 +455,7 @@ export default function LandingPage() {
                             <a href="https://github.com/Technocrat-dev/Fleet-Vehicle-Gateway#readme" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Documentation</a>
                         </div>
                         <div className="text-sm text-slate-500">
-                            © 2024 FleetGateway. All rights reserved.
+                            © 2026 FleetGateway. All rights reserved.
                         </div>
                     </div>
                 </div>
