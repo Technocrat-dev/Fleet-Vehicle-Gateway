@@ -6,10 +6,11 @@ dataclasses-json>=0.6.0
 # Kafka
 confluent-kafka>=2.3.0
 
-# For real edge deployment (optional)
-# ultralytics>=8.0.0
-# openvino>=2023.0.0
-# opencv-python>=4.8.0
+# AI/ML - YOLOv11 + OpenVINO for edge inference
+ultralytics>=8.3.0
+openvino>=2024.0.0
+opencv-python>=4.9.0
+numpy>=1.26.0
 
 # Utilities
 python-dotenv>=1.0.0

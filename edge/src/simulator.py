@@ -1,19 +1,33 @@
 """
-Fleet Vehicle Simulator
+Enhanced Fleet Vehicle Simulator with Real AI Support
 
-Generates realistic telemetry data for 50 vehicles driving around Tokyo.
-Used for demo mode when actual edge hardware is not available.
+Generates realistic telemetry data for fleet vehicles.
+Can use either:
+- Real AI inference (YOLOv11 + OpenVINO) when available
+- Simulated inference for demo/development mode
 """
 
 import asyncio
 import random
 import hashlib
 import math
-from datetime import datetime
-from typing import List, Dict, Generator, Optional, Callable
+import os
+from datetime import datetime, timezone
+from typing import List, Dict, Optional, Callable, Union
 from dataclasses import dataclass
+from pathlib import Path
+
+import numpy as np
 
 from telemetry import VehicleTelemetry, GPSLocation, generate_frame_hash
+
+# Try importing AI inference module
+try:
+    from ai_inference import YOLOv11PoseEstimator, InferenceResult
+    AI_AVAILABLE = True
+except ImportError:
+    AI_AVAILABLE = False
+    print("ℹ️  AI inference module not available. Using simulation mode.")
 
 
 # Tokyo area routes (realistic coordinates)
@@ -125,7 +139,12 @@ class FleetSimulator:
     - 50 vehicles following realistic Tokyo routes
     - Varying occupancy (passengers getting on/off)
     - Realistic GPS movement
-    - Simulated inference latency (~9-12ms like real YOLOv11+OpenVINO)
+    - Real AI inference when available, simulated otherwise
+    - Privacy consent status tracking
+    
+    Modes:
+    - AI Mode: Uses YOLOv11 + OpenVINO for real inference
+    - Simulation Mode: Generates realistic fake data
     """
     
     def __init__(
@@ -133,12 +152,48 @@ class FleetSimulator:
         vehicle_count: int = 50,
         update_interval_ms: int = 1000,
         base_latency_ms: float = 9.6,
+        use_real_ai: bool = True,
+        ai_model_variant: str = "medium",
     ):
+        """
+        Initialize the fleet simulator.
+        
+        Args:
+            vehicle_count: Number of vehicles to simulate
+            update_interval_ms: Update interval in milliseconds
+            base_latency_ms: Base inference latency for simulation mode
+            use_real_ai: Whether to use real AI inference (if available)
+            ai_model_variant: YOLO model variant ('nano', 'small', 'medium', 'large')
+        """
         self.vehicle_count = vehicle_count
         self.update_interval_ms = update_interval_ms
         self.base_latency_ms = base_latency_ms
         self.vehicles: Dict[str, VehicleState] = {}
         self.running = False
+        
+        # AI inference setup
+        self.use_real_ai = use_real_ai and AI_AVAILABLE
+        self.ai_estimator: Optional[YOLOv11PoseEstimator] = None
+        
+        if self.use_real_ai:
+            try:
+                self.ai_estimator = YOLOv11PoseEstimator(
+                    model_variant=ai_model_variant,
+                    use_openvino=True,
+                )
+                if self.ai_estimator.is_initialized:
+                    print(f"🤖 AI Mode: YOLOv11{ai_model_variant[0]}-pose + OpenVINO")
+                    self.ai_estimator.warmup()
+                else:
+                    print("⚠️  AI model failed to initialize. Falling back to simulation.")
+                    self.use_real_ai = False
+            except Exception as e:
+                print(f"⚠️  AI initialization error: {e}. Using simulation mode.")
+                self.use_real_ai = False
+        
+        if not self.use_real_ai:
+            print("🎮 Simulation Mode: Generating synthetic telemetry")
+        
         self._initialize_vehicles()
     
     def _initialize_vehicles(self):
@@ -156,7 +211,7 @@ class FleetSimulator:
                 speed_kmh=random.uniform(20, 50),
                 occupancy=random.randint(0, 8),
                 heading=random.uniform(0, 360),
-                last_occupancy_change=datetime.now(),
+                last_occupancy_change=datetime.now(timezone.utc),
                 consent_status="granted" if random.random() > 0.02 else "pending",
             )
     
@@ -177,6 +232,12 @@ class FleetSimulator:
         delta_lat = end[0] - start[0]
         heading = math.degrees(math.atan2(delta_lng, delta_lat))
         return (heading + 360) % 360
+    
+    def _generate_dummy_frame(self, occupancy: int) -> np.ndarray:
+        """Generate a dummy frame for AI inference testing."""
+        # Create a frame with some random patterns
+        frame = np.random.randint(0, 255, (480, 640, 3), dtype=np.uint8)
+        return frame
     
     def _update_vehicle(self, state: VehicleState) -> VehicleTelemetry:
         """Update a single vehicle's state and generate telemetry."""
@@ -206,27 +267,36 @@ class FleetSimulator:
         location = self._interpolate_position(current_wp, next_wp, state.progress)
         state.heading = self._calculate_heading(current_wp, next_wp)
         
-        # Randomly change occupancy (passengers on/off)
-        time_since_change = (datetime.now() - state.last_occupancy_change).seconds
-        if time_since_change > 10 and random.random() < 0.1:
-            change = random.randint(-2, 2)
-            state.occupancy = max(0, min(8, state.occupancy + change))
-            state.last_occupancy_change = datetime.now()
-        
         # Vary speed slightly
         state.speed_kmh = max(10, min(60, state.speed_kmh + random.uniform(-5, 5)))
         
-        # Generate simulated inference latency (like real YOLOv11+OpenVINO)
-        latency = self.base_latency_ms + random.uniform(-2, 3)
-        
-        # Generate frame hash (simulated)
-        frame_data = f"{state.vehicle_id}:{datetime.now().isoformat()}:{state.occupancy}"
-        frame_hash = generate_frame_hash(frame_data.encode())
+        # Run inference (real or simulated)
+        if self.use_real_ai and self.ai_estimator:
+            # Generate dummy frame and run real inference
+            dummy_frame = self._generate_dummy_frame(state.occupancy)
+            result = self.ai_estimator.detect(dummy_frame, state.vehicle_id)
+            
+            occupancy = result.occupancy_count
+            latency = result.inference_latency_ms
+            frame_hash = result.frame_hash
+        else:
+            # Simulated inference
+            # Randomly change occupancy (passengers on/off)
+            time_since_change = (datetime.now(timezone.utc) - state.last_occupancy_change).seconds
+            if time_since_change > 10 and random.random() < 0.1:
+                change = random.randint(-2, 2)
+                state.occupancy = max(0, min(8, state.occupancy + change))
+                state.last_occupancy_change = datetime.now(timezone.utc)
+            
+            occupancy = state.occupancy
+            latency = self.base_latency_ms + random.uniform(-2, 3)
+            frame_data = f"{state.vehicle_id}:{datetime.now(timezone.utc).isoformat()}:{occupancy}"
+            frame_hash = generate_frame_hash(frame_data.encode())
         
         return VehicleTelemetry(
             vehicle_id=state.vehicle_id,
-            timestamp=datetime.now(),
-            occupancy_count=state.occupancy,
+            timestamp=datetime.now(timezone.utc),
+            occupancy_count=occupancy,
             inference_latency_ms=latency,
             location=location,
             frame_hash=frame_hash,
@@ -256,11 +326,13 @@ class FleetSimulator:
             duration_seconds: Optional limit on simulation duration
         """
         self.running = True
-        start_time = datetime.now()
+        start_time = datetime.now(timezone.utc)
         
-        print(f"🚗 Starting fleet simulator with {self.vehicle_count} vehicles...")
-        print(f"📍 Routes: {len(TOKYO_ROUTES)} Tokyo routes")
-        print(f"⏱️  Update interval: {self.update_interval_ms}ms")
+        mode_str = "AI" if self.use_real_ai else "Simulation"
+        print(f"🚗 Starting fleet simulator ({mode_str} mode)")
+        print(f"   Vehicles: {self.vehicle_count}")
+        print(f"   Routes: {len(TOKYO_ROUTES)} Tokyo routes")
+        print(f"   Update interval: {self.update_interval_ms}ms")
         
         cycle = 0
         while self.running:
@@ -270,19 +342,20 @@ class FleetSimulator:
             for telemetry in batch:
                 callback(telemetry)
             
+            # Log progress every 10 cycles
             if cycle % 10 == 0:
                 total_passengers = sum(t.occupancy_count for t in batch)
                 avg_latency = sum(t.inference_latency_ms for t in batch) / len(batch)
                 print(
                     f"📊 Cycle {cycle}: "
                     f"{len(batch)} vehicles, "
-                    f"{total_passengers} total passengers, "
+                    f"{total_passengers} passengers, "
                     f"avg latency {avg_latency:.1f}ms"
                 )
             
             # Check duration limit
             if duration_seconds:
-                elapsed = (datetime.now() - start_time).seconds
+                elapsed = (datetime.now(timezone.utc) - start_time).seconds
                 if elapsed >= duration_seconds:
                     print(f"⏹️  Simulation complete after {elapsed}s")
                     break
@@ -294,6 +367,43 @@ class FleetSimulator:
     def stop(self):
         """Stop the simulator."""
         self.running = False
+    
+    def get_stats(self) -> dict:
+        """Get simulator statistics."""
+        stats = {
+            "vehicle_count": self.vehicle_count,
+            "mode": "ai" if self.use_real_ai else "simulation",
+            "running": self.running,
+        }
+        
+        if self.ai_estimator:
+            stats["ai_stats"] = self.ai_estimator.get_stats()
+        
+        return stats
+
+
+# Backward-compatible factory function
+def create_simulator(
+    vehicle_count: int = 50,
+    use_real_ai: bool = None,
+) -> FleetSimulator:
+    """
+    Create a fleet simulator with auto-detected AI capability.
+    
+    Args:
+        vehicle_count: Number of vehicles
+        use_real_ai: Force AI mode (None = auto-detect)
+        
+    Returns:
+        Configured FleetSimulator instance
+    """
+    if use_real_ai is None:
+        use_real_ai = AI_AVAILABLE
+    
+    return FleetSimulator(
+        vehicle_count=vehicle_count,
+        use_real_ai=use_real_ai,
+    )
 
 
 # Main entry point for standalone testing
@@ -309,12 +419,26 @@ if __name__ == "__main__":
             f"latency={telemetry.inference_latency_ms:.1f}ms"
         )
     
-    simulator = FleetSimulator(vehicle_count=10)  # Use 10 for quick test
+    # Check for AI mode flag
+    use_ai = "--ai" in sys.argv or "-a" in sys.argv
     
-    print("Testing single batch generation:")
+    print("=" * 60)
+    print("Fleet Simulator Test")
+    print("=" * 60)
+    
+    simulator = FleetSimulator(
+        vehicle_count=10,  # Use 10 for quick test
+        use_real_ai=use_ai,
+    )
+    
+    print(f"\n📈 Simulator stats: {simulator.get_stats()}")
+    
+    print("\n📍 Testing single batch generation:")
     batch = simulator.generate_batch()
     for t in batch[:5]:  # Print first 5
         print_telemetry(t)
     
-    print("\nTesting async simulation (5 seconds):")
+    print(f"\n🔄 Testing async simulation (5 seconds):")
     asyncio.run(simulator.run(print_telemetry, duration_seconds=5))
+    
+    print(f"\n📈 Final stats: {simulator.get_stats()}")
