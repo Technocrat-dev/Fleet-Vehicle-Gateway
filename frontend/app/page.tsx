@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
     Car, MapPin, Zap, Shield, BarChart3, Bell,
     Users, Globe, ChevronRight, Play, Check,
-    Wifi, Clock, TrendingUp, ArrowRight
+    Wifi, Clock, TrendingUp, ArrowRight, Menu, X
 } from 'lucide-react'
 
 // Animated counter component
@@ -61,6 +61,7 @@ function StatCard({ value, label, icon }: { value: React.ReactNode, label: strin
 
 export default function LandingPage() {
     const [isVisible, setIsVisible] = useState(false)
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
     useEffect(() => {
         // Check if user is already authenticated
@@ -137,9 +138,9 @@ export default function LandingPage() {
                         <div className="hidden md:flex items-center gap-8">
                             <a href="#features" className="text-slate-400 hover:text-white transition-colors">Features</a>
                             <a href="#how-it-works" className="text-slate-400 hover:text-white transition-colors">How It Works</a>
-                            <a href="#pricing" className="text-slate-400 hover:text-white transition-colors">Pricing</a>
+                            <a href="https://github.com/Technocrat-dev/Fleet-Vehicle-Gateway" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors">GitHub</a>
                         </div>
-                        <div className="flex items-center gap-4">
+                        <div className="hidden md:flex items-center gap-4">
                             <Link
                                 href="/auth/login"
                                 className="text-slate-300 hover:text-white transition-colors"
@@ -153,8 +154,39 @@ export default function LandingPage() {
                                 Get Started
                             </Link>
                         </div>
+                        {/* Mobile menu button */}
+                        <button
+                            className="md:hidden p-2 text-slate-400 hover:text-white"
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        >
+                            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                        </button>
                     </div>
                 </div>
+
+                {/* Mobile menu panel */}
+                {mobileMenuOpen && (
+                    <div className="md:hidden bg-slate-900/95 backdrop-blur-lg border-t border-slate-800">
+                        <div className="container mx-auto px-6 py-4 space-y-4">
+                            <a href="#features" onClick={() => setMobileMenuOpen(false)} className="block text-slate-400 hover:text-white transition-colors py-2">Features</a>
+                            <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="block text-slate-400 hover:text-white transition-colors py-2">How It Works</a>
+                            <a href="https://github.com/Technocrat-dev/Fleet-Vehicle-Gateway" target="_blank" rel="noopener noreferrer" className="block text-slate-400 hover:text-white transition-colors py-2">GitHub</a>
+                            <hr className="border-slate-700" />
+                            <Link
+                                href="/auth/login"
+                                className="block text-slate-300 hover:text-white transition-colors py-2"
+                            >
+                                Log In
+                            </Link>
+                            <Link
+                                href="/auth/register"
+                                className="block w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium text-center hover:opacity-90 transition-opacity"
+                            >
+                                Get Started
+                            </Link>
+                        </div>
+                    </div>
+                )}
             </nav>
 
             {/* Hero Section */}
@@ -187,13 +219,18 @@ export default function LandingPage() {
                                 href="/auth/register"
                                 className="group px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-semibold text-lg hover:opacity-90 transition-all flex items-center gap-2 shadow-lg shadow-blue-500/25"
                             >
-                                Start Free Trial
+                                Get Started
                                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                             </Link>
-                            <button className="group px-8 py-4 bg-slate-800 text-white rounded-xl font-semibold text-lg hover:bg-slate-700 transition-colors flex items-center gap-2 border border-slate-700">
-                                <Play className="w-5 h-5" />
-                                Watch Demo
-                            </button>
+                            <a
+                                href="https://github.com/Technocrat-dev/Fleet-Vehicle-Gateway"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group px-8 py-4 bg-slate-800 text-white rounded-xl font-semibold text-lg hover:bg-slate-700 transition-colors flex items-center gap-2 border border-slate-700"
+                            >
+                                <Globe className="w-5 h-5" />
+                                View on GitHub
+                            </a>
                         </div>
 
                         {/* Hero Image / Dashboard Preview */}
@@ -363,105 +400,37 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            {/* Pricing */}
-            <section id="pricing" className="py-24 px-6 bg-slate-800/50">
-                <div className="container mx-auto">
-                    <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                            Simple, Transparent Pricing
-                        </h2>
-                        <p className="text-slate-400">
-                            Start free, scale as you grow
-                        </p>
-                    </div>
-
-                    <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-                        {[
-                            {
-                                name: 'Starter',
-                                price: 'Free',
-                                period: 'forever',
-                                features: ['Up to 10 vehicles', 'Real-time tracking', 'Basic analytics', 'Community support'],
-                                cta: 'Get Started',
-                                highlight: false
-                            },
-                            {
-                                name: 'Pro',
-                                price: '$49',
-                                period: '/month',
-                                features: ['Up to 100 vehicles', 'Geofencing & alerts', 'Advanced analytics', 'Priority support', 'API access'],
-                                cta: 'Start Free Trial',
-                                highlight: true
-                            },
-                            {
-                                name: 'Enterprise',
-                                price: 'Custom',
-                                period: '',
-                                features: ['Unlimited vehicles', 'White-label option', 'Custom integrations', 'Dedicated support', 'SLA guarantee'],
-                                cta: 'Contact Sales',
-                                highlight: false
-                            }
-                        ].map((plan) => (
-                            <div
-                                key={plan.name}
-                                className={`relative rounded-2xl p-8 ${plan.highlight
-                                    ? 'bg-gradient-to-br from-blue-600 to-purple-600 border-0'
-                                    : 'bg-slate-800 border border-slate-700'
-                                    }`}
-                            >
-                                {plan.highlight && (
-                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-yellow-500 text-yellow-900 text-xs font-bold rounded-full">
-                                        MOST POPULAR
-                                    </div>
-                                )}
-                                <h3 className="text-xl font-semibold text-white mb-2">{plan.name}</h3>
-                                <div className="mb-6">
-                                    <span className="text-4xl font-bold text-white">{plan.price}</span>
-                                    <span className="text-slate-300">{plan.period}</span>
-                                </div>
-                                <ul className="space-y-3 mb-8">
-                                    {plan.features.map((feature) => (
-                                        <li key={feature} className="flex items-center gap-2 text-slate-200">
-                                            <Check className="w-4 h-4 text-green-400" />
-                                            {feature}
-                                        </li>
-                                    ))}
-                                </ul>
-                                <Link
-                                    href="/auth/register"
-                                    className={`block w-full py-3 rounded-xl font-medium text-center transition-colors ${plan.highlight
-                                        ? 'bg-white text-slate-900 hover:bg-slate-100'
-                                        : 'bg-slate-700 text-white hover:bg-slate-600'
-                                        }`}
-                                >
-                                    {plan.cta}
-                                </Link>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
             {/* CTA Section */}
-            <section className="py-24 px-6">
+            <section className="py-24 px-6 bg-slate-800/50">
                 <div className="container mx-auto">
                     <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 to-purple-600 p-12 text-center">
                         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-20" />
                         <div className="relative">
                             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                                Ready to Transform Your Fleet?
+                                Ready to Explore the Platform?
                             </h2>
                             <p className="text-blue-100 mb-8 max-w-xl mx-auto">
-                                Join thousands of fleet managers who trust FleetGateway for
-                                real-time visibility and intelligent fleet optimization.
+                                A production-ready fleet management system showcasing edge-to-cloud data pipelines,
+                                real-time WebSocket streaming, and AI-powered analytics.
                             </p>
-                            <Link
-                                href="/auth/register"
-                                className="inline-flex items-center gap-2 px-8 py-4 bg-white text-slate-900 rounded-xl font-semibold text-lg hover:bg-slate-100 transition-colors"
-                            >
-                                Start Your Free Trial
-                                <ChevronRight className="w-5 h-5" />
-                            </Link>
+                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                                <Link
+                                    href="/auth/register"
+                                    className="inline-flex items-center gap-2 px-8 py-4 bg-white text-slate-900 rounded-xl font-semibold text-lg hover:bg-slate-100 transition-colors"
+                                >
+                                    Try the Demo
+                                    <ChevronRight className="w-5 h-5" />
+                                </Link>
+                                <a
+                                    href="https://github.com/Technocrat-dev/Fleet-Vehicle-Gateway"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 px-8 py-4 bg-slate-800/80 text-white rounded-xl font-semibold text-lg hover:bg-slate-700 transition-colors border border-white/20"
+                                >
+                                    <Globe className="w-5 h-5" />
+                                    Source Code
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
