@@ -210,3 +210,99 @@ class RefreshToken(Base):
     last_used_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+
+
+class Geofence(Base):
+    """Geofence model for virtual boundaries."""
+
+    __tablename__ = "geofences"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # GeoJSON polygon stored as JSON text
+    # Format: {"type": "Polygon", "coordinates": [[[lng, lat], [lng, lat], ...]]}
+    polygon: Mapped[str] = mapped_column(Text, nullable=False)
+    
+    # Alert settings
+    alert_on_enter: Mapped[bool] = mapped_column(Boolean, default=True)
+    alert_on_exit: Mapped[bool] = mapped_column(Boolean, default=True)
+    
+    # Styling
+    color: Mapped[str] = mapped_column(String(7), default="#3B82F6")  # Hex color
+    
+    # Status
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+    
+    # Relationships
+    alerts: Mapped[list["Alert"]] = relationship("Alert", back_populates="geofence", cascade="all, delete-orphan")
+    
+    __table_args__ = (
+        Index("ix_geofences_user_id", "user_id"),
+    )
+
+
+class Alert(Base):
+    """Alert model for geofence and system notifications."""
+
+    __tablename__ = "alerts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=False
+    )
+    
+    # Alert details
+    alert_type: Mapped[str] = mapped_column(
+        String(50), nullable=False
+    )  # geofence_enter, geofence_exit, speeding, idle, maintenance
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    severity: Mapped[str] = mapped_column(
+        String(20), default="info"
+    )  # info, warning, critical
+    
+    # Related entities
+    vehicle_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    geofence_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("geofences.id", ondelete="SET NULL"), nullable=True
+    )
+    
+    # Status
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_acknowledged: Mapped[bool] = mapped_column(Boolean, default=False)
+    acknowledged_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    
+    # Metadata (extra data as JSON)
+    metadata: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+    
+    # Relationships
+    geofence: Mapped[Optional["Geofence"]] = relationship("Geofence", back_populates="alerts")
+    
+    __table_args__ = (
+        Index("ix_alerts_user_id", "user_id"),
+        Index("ix_alerts_created_at", "created_at"),
+        Index("ix_alerts_vehicle_id", "vehicle_id"),
+    )
+

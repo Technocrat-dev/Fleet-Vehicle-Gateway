@@ -5,7 +5,7 @@ import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import {
     Car, Users, Zap, Activity, Shield,
-    LogOut, RefreshCw, Wifi, WifiOff
+    LogOut, RefreshCw, Wifi, WifiOff, MapPin
 } from 'lucide-react'
 import { useFleetWebSocket, VehicleStatus } from '@/lib/websocket'
 import { logout } from '@/lib/auth'
@@ -14,6 +14,7 @@ import { VehicleGrid } from '@/components/VehicleGrid'
 import { LatencyChart } from '@/components/LatencyChart'
 import { OccupancyChart } from '@/components/OccupancyChart'
 import { VehicleDetailDrawer } from '@/components/VehicleDetailDrawer'
+import { NotificationBell } from '@/components/NotificationBell'
 
 // Dynamic import for map (SSR disabled)
 const FleetMap = dynamic(() => import('@/components/FleetMap'), {
@@ -55,6 +56,18 @@ export default function DashboardPage() {
                         </div>
 
                         <div className="flex items-center gap-4">
+                            {/* Geofences Link */}
+                            <Link
+                                href="/geofences"
+                                className="flex items-center gap-2 px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-sm"
+                            >
+                                <MapPin className="w-4 h-4 text-slate-500" />
+                                <span className="text-slate-600 dark:text-slate-400">Geofences</span>
+                            </Link>
+
+                            {/* Notifications */}
+                            <NotificationBell />
+
                             {/* Connection Status */}
                             <div className="flex items-center gap-2 text-sm">
                                 {isConnected ? (

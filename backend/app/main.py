@@ -160,6 +160,11 @@ app.include_router(vehicles.router, prefix="/api", tags=["Vehicles"])
 app.include_router(analytics.router, prefix="/api", tags=["Analytics"])
 app.include_router(ws_router.router, tags=["WebSocket"])
 
+# Geofencing router
+from app.api.geofencing import router as geofencing_router
+app.include_router(geofencing_router, prefix="/api", tags=["Geofencing"])
+
+
 
 # Health check endpoints
 @app.get("/health", response_class=PlainTextResponse, include_in_schema=False)
