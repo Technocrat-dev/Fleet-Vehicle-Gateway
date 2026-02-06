@@ -302,8 +302,8 @@ class Alert(Base):
         DateTime(timezone=True), nullable=True
     )
     
-    # Metadata (extra data as JSON)
-    metadata: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # Extra data (JSON)
+    extra_data: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
