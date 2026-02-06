@@ -13,12 +13,12 @@ from datetime import datetime, timezone
 from typing import Optional, List
 from fastapi import APIRouter, HTTPException, Request, Query, Depends
 from pydantic import BaseModel, Field
-from sqlalchemy import select, delete
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user, get_db
-from app.models.db_models import User, Geofence, Alert, UserRole
-from app.core.permissions import require_role, require_manager, require_admin
+from app.models.db_models import User, Geofence, Alert
+from app.core.permissions import require_manager, require_admin
 
 
 router = APIRouter()
@@ -157,7 +157,7 @@ async def list_geofences(
     query = select(Geofence).where(Geofence.user_id == current_user.id)
     
     if active_only:
-        query = query.where(Geofence.is_active == True)
+        query = query.where(Geofence.is_active)
     
     query = query.order_by(Geofence.created_at.desc())
     result = await db.execute(query)
@@ -302,7 +302,7 @@ async def list_alerts(
     query = select(Alert).where(Alert.user_id == current_user.id)
     
     if unread_only:
-        query = query.where(Alert.is_read == False)
+        query = query.where(~Alert.is_read)
     
     query = query.order_by(Alert.created_at.desc()).limit(limit)
     result = await db.execute(query)
@@ -336,7 +336,7 @@ async def get_unread_count(
     result = await db.execute(
         select(func.count(Alert.id)).where(
             Alert.user_id == current_user.id,
-            Alert.is_read == False,
+            ~Alert.is_read,
         )
     )
     count = result.scalar() or 0
@@ -404,7 +404,7 @@ async def mark_all_alerts_read(
     
     await db.execute(
         update(Alert)
-        .where(Alert.user_id == current_user.id, Alert.is_read == False)
+        .where(Alert.user_id == current_user.id, ~Alert.is_read)
         .values(is_read=True)
     )
     await db.commit()
@@ -453,7 +453,7 @@ async def check_geofences(
     result = await db.execute(
         select(Geofence).where(
             Geofence.user_id == current_user.id,
-            Geofence.is_active == True,
+            Geofence.is_active,
         )
     )
     geofences = result.scalars().all()

@@ -2,8 +2,7 @@
 Role-based access control permissions for the Fleet Vehicle Gateway.
 """
 
-from typing import List, Callable
-from functools import wraps
+from typing import List
 from fastapi import Depends, HTTPException, status
 
 from app.core.auth import get_current_user

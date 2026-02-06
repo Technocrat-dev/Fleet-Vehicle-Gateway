@@ -5,9 +5,9 @@ All endpoints require authentication.
 """
 
 from typing import Optional, List
-from datetime import datetime, timezone
+from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 

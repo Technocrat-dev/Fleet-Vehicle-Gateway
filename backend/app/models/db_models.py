@@ -16,7 +16,6 @@ from sqlalchemy import (
     ForeignKey,
     Text,
     Index,
-    Enum,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
