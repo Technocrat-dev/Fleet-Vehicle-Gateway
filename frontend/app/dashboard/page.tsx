@@ -5,9 +5,10 @@ import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import {
     Car, Users, Zap, Activity, Shield,
-    ChevronLeft, RefreshCw, Wifi, WifiOff
+    LogOut, RefreshCw, Wifi, WifiOff
 } from 'lucide-react'
 import { useFleetWebSocket, VehicleStatus } from '@/lib/websocket'
+import { logout } from '@/lib/auth'
 import { StatsCard } from '@/components/StatsCard'
 import { VehicleGrid } from '@/components/VehicleGrid'
 import { LatencyChart } from '@/components/LatencyChart'
@@ -36,12 +37,13 @@ export default function DashboardPage() {
                 <div className="container mx-auto px-6 py-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <Link
-                                href="/"
-                                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                            <button
+                                onClick={() => logout()}
+                                className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors group"
+                                title="Logout"
                             >
-                                <ChevronLeft className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-                            </Link>
+                                <LogOut className="w-5 h-5 text-slate-600 dark:text-slate-400 group-hover:text-red-600 dark:group-hover:text-red-400" />
+                            </button>
                             <div className="flex items-center gap-2">
                                 <Car className="w-6 h-6 text-blue-500" />
                                 <h1 className="text-xl font-bold text-slate-800 dark:text-white">

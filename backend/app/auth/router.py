@@ -38,7 +38,7 @@ from app.auth.schemas import (
 )
 from app.auth.dependencies import get_current_user
 from app.auth.oauth import (
-    oauth,
+    get_oauth_client,
     get_google_user_info,
     get_github_user_info,
     get_enabled_providers,
@@ -244,7 +244,8 @@ async def google_login(request: Request):
         )
 
     redirect_uri = f"{settings.OAUTH_REDIRECT_URL}/google"
-    return await oauth.google.authorize_redirect(request, redirect_uri)
+    oauth_client = get_oauth_client()
+    return await oauth_client.google.authorize_redirect(request, redirect_uri)
 
 
 @router.get("/callback/google")
@@ -260,7 +261,8 @@ async def google_callback(
         )
 
     try:
-        token = await oauth.google.authorize_access_token(request)
+        oauth_client = get_oauth_client()
+        token = await oauth_client.google.authorize_access_token(request)
     except Exception as e:
         logger.error("google_oauth_error", error=str(e))
         # Redirect to frontend with error
@@ -290,7 +292,8 @@ async def github_login(request: Request):
         )
 
     redirect_uri = f"{settings.OAUTH_REDIRECT_URL}/github"
-    return await oauth.github.authorize_redirect(request, redirect_uri)
+    oauth_client = get_oauth_client()
+    return await oauth_client.github.authorize_redirect(request, redirect_uri)
 
 
 @router.get("/callback/github")
@@ -306,7 +309,8 @@ async def github_callback(
         )
 
     try:
-        token = await oauth.github.authorize_access_token(request)
+        oauth_client = get_oauth_client()
+        token = await oauth_client.github.authorize_access_token(request)
     except Exception as e:
         logger.error("github_oauth_error", error=str(e))
         # Redirect to frontend with error
