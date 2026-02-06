@@ -37,6 +37,7 @@ function createVehicleIcon(occupancy: number) {
         font-size: 11px;
         font-weight: bold;
         box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        cursor: pointer;
       ">
         ${occupancy}
       </div>
@@ -48,6 +49,7 @@ function createVehicleIcon(occupancy: number) {
 
 interface FleetMapProps {
     vehicles: VehicleStatus[]
+    onVehicleClick?: (vehicle: VehicleStatus) => void
 }
 
 // Component to fit map bounds to vehicles
@@ -66,7 +68,7 @@ function MapBoundsUpdater({ vehicles }: { vehicles: VehicleStatus[] }) {
     return null
 }
 
-export default function FleetMap({ vehicles }: FleetMapProps) {
+export default function FleetMap({ vehicles, onVehicleClick }: FleetMapProps) {
     // Tokyo center coordinates
     const defaultCenter: [number, number] = [35.6762, 139.7503]
 
@@ -94,6 +96,9 @@ export default function FleetMap({ vehicles }: FleetMapProps) {
                         key={vehicle.vehicle_id}
                         position={[vehicle.location.latitude, vehicle.location.longitude]}
                         icon={createVehicleIcon(vehicle.occupancy_count)}
+                        eventHandlers={{
+                            click: () => onVehicleClick?.(vehicle)
+                        }}
                     >
                         <Popup>
                             <div className="text-sm">
@@ -109,6 +114,14 @@ export default function FleetMap({ vehicles }: FleetMapProps) {
                                 <div className="text-xs text-gray-500 mt-1">
                                     {vehicle.consent_status === 'granted' ? '✅ Consent' : '⚠️ Pending'}
                                 </div>
+                                {onVehicleClick && (
+                                    <button
+                                        onClick={() => onVehicleClick(vehicle)}
+                                        className="mt-2 w-full px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+                                    >
+                                        View Details
+                                    </button>
+                                )}
                             </div>
                         </Popup>
                     </Marker>
@@ -117,3 +130,4 @@ export default function FleetMap({ vehicles }: FleetMapProps) {
         </div>
     )
 }
+

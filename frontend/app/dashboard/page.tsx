@@ -13,6 +13,7 @@ import { StatsCard } from '@/components/StatsCard'
 import { VehicleGrid } from '@/components/VehicleGrid'
 import { LatencyChart } from '@/components/LatencyChart'
 import { OccupancyChart } from '@/components/OccupancyChart'
+import { VehicleDetailDrawer } from '@/components/VehicleDetailDrawer'
 
 // Dynamic import for map (SSR disabled)
 const FleetMap = dynamic(() => import('@/components/FleetMap'), {
@@ -27,6 +28,7 @@ const FleetMap = dynamic(() => import('@/components/FleetMap'), {
 export default function DashboardPage() {
     const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws/telemetry'
     const { vehicles, summary, isConnected, error, messageCount } = useFleetWebSocket(wsUrl)
+    const [selectedVehicle, setSelectedVehicle] = useState<VehicleStatus | null>(null)
 
     const vehicleArray = Array.from(vehicles.values())
 
@@ -117,7 +119,10 @@ export default function DashboardPage() {
                             {vehicleArray.length} vehicles on map
                         </span>
                     </div>
-                    <FleetMap vehicles={vehicleArray} />
+                    <FleetMap
+                        vehicles={vehicleArray}
+                        onVehicleClick={(vehicle) => setSelectedVehicle(vehicle)}
+                    />
                 </div>
 
                 {/* Charts Row */}
@@ -150,6 +155,12 @@ export default function DashboardPage() {
                     <VehicleGrid vehicles={vehicleArray} />
                 </div>
             </main>
+
+            {/* Vehicle Detail Drawer */}
+            <VehicleDetailDrawer
+                vehicle={selectedVehicle}
+                onClose={() => setSelectedVehicle(null)}
+            />
         </div>
     )
 }
