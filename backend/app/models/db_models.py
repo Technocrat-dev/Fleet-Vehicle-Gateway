@@ -24,7 +24,7 @@ from app.core.database import Base
 
 class UserRole(str, PyEnum):
     """User roles for access control.
-    
+
     ADMIN: Full access - user management, all features
     USER: Standard access - dashboard, own geofences, alerts
     """
