@@ -44,7 +44,7 @@ async def migrate_user_roles(db: AsyncSession):
         
         # Update all users with NULL or empty role to 'user'
         await db.execute(
-            text(f"UPDATE users SET role = :role WHERE role IS NULL OR role = ''"),
+            text("UPDATE users SET role = :role WHERE role IS NULL OR role = ''"),
             {"role": UserRole.USER.value}
         )
         
