@@ -62,9 +62,13 @@ export default function GeofencesPage() {
             })
             if (response.ok) {
                 setGeofences(geofences.filter(g => g.id !== id))
+            } else {
+                const data = await response.json().catch(() => ({}))
+                setError(data.detail || `Failed to delete geofence (${response.status})`)
             }
         } catch (err) {
-            setError('Failed to delete geofence')
+            console.error('Delete error:', err)
+            setError('Failed to delete geofence - check console for details')
         }
     }
 
@@ -424,9 +428,9 @@ function GeofenceModal({ geofence, onClose, onSave, apiUrl }: GeofenceModalProps
                         </label>
                     </div>
 
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
-                        <p className="text-sm text-blue-700 dark:text-blue-400">
-                            📍 A default polygon around Tokyo will be created. You can edit the coordinates later using the map editor.
+                    <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg">
+                        <p className="text-sm text-amber-700 dark:text-amber-400">
+                            📍 Geofence will use a fixed rectangular area in Tokyo (Shibuya district). In a production system, this would be drawn on a map.
                         </p>
                     </div>
 
