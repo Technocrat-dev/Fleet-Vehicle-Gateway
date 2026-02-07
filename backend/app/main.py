@@ -58,6 +58,10 @@ async def lifespan(app: FastAPI):
     await init_db()
     logger.info("database_initialized")
 
+    # Run database migrations (fix user roles, etc.)
+    from app.core.migrations import run_migrations
+    await run_migrations()
+
     # Start Kafka consumer in background
     consumer_task = None
     if settings.KAFKA_ENABLED:
