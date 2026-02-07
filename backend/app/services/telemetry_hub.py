@@ -128,6 +128,9 @@ class TelemetryHub:
 
         # Broadcast to WebSocket clients
         await self._broadcast(telemetry)
+        
+        # Check geofences for this vehicle
+        await self._check_geofences(telemetry)
 
     async def _broadcast(self, telemetry: VehicleTelemetry):
         """Broadcast telemetry update to all connected WebSocket clients."""
@@ -264,3 +267,20 @@ class TelemetryHub:
         # Consider healthy if we have received any messages
         # or if we just started (no messages yet is ok initially)
         return True
+
+    async def _check_geofences(self, telemetry: VehicleTelemetry):
+        """Check if vehicle has entered/exited any geofences."""
+        try:
+            from app.services.geofence_service import geofence_service
+            
+            lat = telemetry.location.latitude
+            lng = telemetry.location.longitude
+            
+            await geofence_service.check_vehicle(
+                vehicle_id=telemetry.vehicle_id,
+                latitude=lat,
+                longitude=lng,
+            )
+        except Exception as e:
+            # Don't let geofence errors break telemetry processing
+            print(f"⚠️  Geofence check error: {e}")

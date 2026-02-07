@@ -1,13 +1,14 @@
 /**
- * Fleet Map Component - Interactive Leaflet map showing vehicle locations
+ * Fleet Map Component - Interactive Leaflet map showing vehicle locations and geofences
  */
 
 'use client'
 
-import { useEffect, useState } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import { useEffect, useState, useCallback } from 'react'
+import { MapContainer, TileLayer, Marker, Popup, Polygon, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { VehicleStatus } from '@/lib/websocket'
+import { fetchWithAuth } from '@/lib/auth'
 
 // Fix Leaflet default icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -47,9 +48,21 @@ function createVehicleIcon(occupancy: number) {
     })
 }
 
+interface Geofence {
+    id: number
+    name: string
+    polygon: {
+        type: string
+        coordinates: number[][][]
+    }
+    color: string
+    is_active: boolean
+}
+
 interface FleetMapProps {
     vehicles: VehicleStatus[]
     onVehicleClick?: (vehicle: VehicleStatus) => void
+    showGeofences?: boolean
 }
 
 // Component to fit map bounds to vehicles
@@ -68,9 +81,40 @@ function MapBoundsUpdater({ vehicles }: { vehicles: VehicleStatus[] }) {
     return null
 }
 
-export default function FleetMap({ vehicles, onVehicleClick }: FleetMapProps) {
+// Convert GeoJSON coordinates to Leaflet format
+function geojsonToLeaflet(coordinates: number[][][]): [number, number][] {
+    // GeoJSON uses [lng, lat], Leaflet uses [lat, lng]
+    return coordinates[0].map(([lng, lat]) => [lat, lng] as [number, number])
+}
+
+export default function FleetMap({ vehicles, onVehicleClick, showGeofences = true }: FleetMapProps) {
+    const [geofences, setGeofences] = useState<Geofence[]>([])
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
     // Tokyo center coordinates
     const defaultCenter: [number, number] = [35.6762, 139.7503]
+
+    // Load geofences
+    const loadGeofences = useCallback(async () => {
+        if (!showGeofences) return
+
+        try {
+            const response = await fetchWithAuth(`${apiUrl}/api/geofences?active_only=true`)
+            if (response.ok) {
+                const data = await response.json()
+                setGeofences(data)
+            }
+        } catch (err) {
+            console.error('Failed to load geofences for map:', err)
+        }
+    }, [apiUrl, showGeofences])
+
+    useEffect(() => {
+        loadGeofences()
+        // Refresh geofences every 30 seconds
+        const interval = setInterval(loadGeofences, 30000)
+        return () => clearInterval(interval)
+    }, [loadGeofences])
 
     if (typeof window === 'undefined') {
         return null  // SSR guard
@@ -91,6 +135,30 @@ export default function FleetMap({ vehicles, onVehicleClick }: FleetMapProps) {
 
                 <MapBoundsUpdater vehicles={vehicles} />
 
+                {/* Render geofence polygons */}
+                {geofences.map((geofence) => (
+                    <Polygon
+                        key={`geofence-${geofence.id}`}
+                        positions={geojsonToLeaflet(geofence.polygon.coordinates)}
+                        pathOptions={{
+                            color: geofence.color,
+                            fillColor: geofence.color,
+                            fillOpacity: 0.2,
+                            weight: 2,
+                        }}
+                    >
+                        <Popup>
+                            <div className="text-sm">
+                                <div className="font-bold mb-1">📍 {geofence.name}</div>
+                                <div className="text-xs text-gray-500">
+                                    {geofence.is_active ? '✅ Active' : '⚫ Inactive'}
+                                </div>
+                            </div>
+                        </Popup>
+                    </Polygon>
+                ))}
+
+                {/* Render vehicles */}
                 {vehicles.map((vehicle) => (
                     <Marker
                         key={vehicle.vehicle_id}
@@ -130,4 +198,3 @@ export default function FleetMap({ vehicles, onVehicleClick }: FleetMapProps) {
         </div>
     )
 }
-

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Bell, X, Check, AlertTriangle, Info, AlertCircle } from 'lucide-react'
 import { fetchWithAuth } from '@/lib/auth'
 
@@ -26,6 +26,9 @@ export function NotificationBell({ apiUrl = 'http://localhost:8000' }: Notificat
     const [unreadCount, setUnreadCount] = useState(0)
     const [isOpen, setIsOpen] = useState(false)
     const [loading, setLoading] = useState(false)
+    const wsRef = useRef<WebSocket | null>(null)
+
+    const wsUrl = apiUrl.replace('http://', 'ws://').replace('https://', 'wss://') + '/ws/alerts'
 
     const loadAlerts = useCallback(async () => {
         try {
@@ -51,9 +54,77 @@ export function NotificationBell({ apiUrl = 'http://localhost:8000' }: Notificat
         }
     }, [apiUrl])
 
+    // Connect to WebSocket for real-time alerts
+    useEffect(() => {
+        const connectWebSocket = () => {
+            try {
+                const ws = new WebSocket(wsUrl)
+
+                ws.onopen = () => {
+                    console.log('🔔 Alert WebSocket connected')
+                }
+
+                ws.onmessage = (event) => {
+                    try {
+                        const message = JSON.parse(event.data)
+
+                        if (message.type === 'alert') {
+                            // New alert received - update UI
+                            setUnreadCount(prev => prev + 1)
+
+                            // Add to alerts list if panel is open
+                            const newAlert: Alert = {
+                                id: Date.now(), // Temporary ID
+                                alert_type: message.alert_type,
+                                title: message.title,
+                                message: message.message,
+                                severity: message.severity,
+                                vehicle_id: message.vehicle_id,
+                                geofence_id: message.geofence_id,
+                                is_read: false,
+                                is_acknowledged: false,
+                                created_at: message.created_at || new Date().toISOString(),
+                            }
+
+                            setAlerts(prev => [newAlert, ...prev.slice(0, 9)])
+
+                            // Play notification sound (optional)
+                            // new Audio('/notification.mp3').play().catch(() => {})
+                        }
+                    } catch (e) {
+                        // Ignore parse errors for heartbeat messages
+                    }
+                }
+
+                ws.onerror = (error) => {
+                    console.error('Alert WebSocket error:', error)
+                }
+
+                ws.onclose = () => {
+                    console.log('🔔 Alert WebSocket disconnected, reconnecting...')
+                    // Reconnect after 5 seconds
+                    setTimeout(connectWebSocket, 5000)
+                }
+
+                wsRef.current = ws
+            } catch (err) {
+                console.error('Failed to connect to alert WebSocket:', err)
+            }
+        }
+
+        connectWebSocket()
+
+        return () => {
+            if (wsRef.current) {
+                wsRef.current.close()
+            }
+        }
+    }, [wsUrl])
+
+    // Initial load
     useEffect(() => {
         loadUnreadCount()
-        // Poll for new alerts every 30 seconds
+        // Also poll as backup every 30 seconds
         const interval = setInterval(loadUnreadCount, 30000)
         return () => clearInterval(interval)
     }, [loadUnreadCount])
@@ -128,9 +199,9 @@ export function NotificationBell({ apiUrl = 'http://localhost:8000' }: Notificat
                 onClick={() => setIsOpen(!isOpen)}
                 className="relative p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
             >
-                <Bell className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                <Bell className={`w-5 h-5 ${unreadCount > 0 ? 'text-blue-500 animate-pulse' : 'text-slate-600 dark:text-slate-400'}`} />
                 {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-bounce">
                         {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                 )}
@@ -167,7 +238,8 @@ export function NotificationBell({ apiUrl = 'http://localhost:8000' }: Notificat
                             {alerts.length === 0 ? (
                                 <div className="p-6 text-center text-slate-500 dark:text-slate-400">
                                     <Bell className="w-8 h-8 mx-auto mb-2 text-slate-300 dark:text-slate-600" />
-                                    <p>No notifications</p>
+                                    <p>No notifications yet</p>
+                                    <p className="text-xs mt-1">Geofence alerts will appear here</p>
                                 </div>
                             ) : (
                                 alerts.map((alert) => (

@@ -103,3 +103,74 @@ async def websocket_summary(websocket: WebSocket):
         print(f"❌ Summary WebSocket error: {e}")
     finally:
         print("📊 Summary WebSocket disconnected")
+
+
+# Alert WebSocket clients registry
+_alert_clients: set = set()
+
+
+@router.websocket("/ws/alerts")
+async def websocket_alerts(websocket: WebSocket):
+    """
+    WebSocket endpoint for real-time alert notifications.
+    
+    Clients receive geofence alerts as they occur.
+    Each message is a JSON object with alert data.
+    
+    Example message:
+    {
+        "type": "alert",
+        "alert_type": "geofence_enter",
+        "title": "Vehicle Entered Zone",
+        "message": "Vehicle vehicle-001 has entered geofence 'Tokyo Station'",
+        "severity": "info",
+        "vehicle_id": "vehicle-001",
+        "geofence_id": 1,
+        "created_at": "2026-02-07T10:00:00Z"
+    }
+    """
+    await websocket.accept()
+    _alert_clients.add(websocket)
+    
+    print(f"🔔 Alert WebSocket client connected (total: {len(_alert_clients)})")
+    
+    # Register callback with geofence service
+    from app.services.geofence_service import geofence_service
+    
+    async def alert_callback(alert: dict):
+        """Send alert to this WebSocket client."""
+        try:
+            message = {"type": "alert", **alert}
+            await websocket.send_text(json.dumps(message, default=str))
+        except Exception:
+            pass
+    
+    geofence_service.register_alert_callback(alert_callback)
+    
+    try:
+        # Keep connection alive
+        while True:
+            try:
+                data = await asyncio.wait_for(
+                    websocket.receive_text(), timeout=30.0
+                )
+                
+                message = json.loads(data)
+                if message.get("type") == "ping":
+                    await websocket.send_text(json.dumps({"type": "pong"}))
+                    
+            except asyncio.TimeoutError:
+                await websocket.send_text(json.dumps({"type": "heartbeat"}))
+            except json.JSONDecodeError:
+                pass
+                
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        print(f"❌ Alert WebSocket error: {e}")
+    finally:
+        _alert_clients.discard(websocket)
+        # Remove callback
+        if alert_callback in geofence_service._alert_callbacks:
+            geofence_service._alert_callbacks.remove(alert_callback)
+        print(f"🔔 Alert WebSocket disconnected (remaining: {len(_alert_clients)})")
