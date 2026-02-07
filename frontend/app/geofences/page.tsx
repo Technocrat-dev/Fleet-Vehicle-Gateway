@@ -17,7 +17,7 @@ interface GeofenceMapProps {
 }
 
 // Dynamic import for map (SSR disabled)
-// @ts-ignore - Next.js dynamic import type resolution
+// @ts-ignore Next.js dynamic import issue
 const GeofenceMap = dynamic<GeofenceMapProps>(
     () => import('./GeofenceMapComponent').then(mod => mod.default),
     {
