@@ -8,14 +8,14 @@ when vehicles enter or exit geofence boundaries.
 import json
 import asyncio
 from datetime import datetime, timezone, timedelta
-from typing import Dict, Optional, List, Tuple, Any
+from typing import Dict, Optional, List, Any
 from dataclasses import dataclass
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import async_session_maker
-from app.models.db_models import Geofence, Alert, User
+from app.models.db_models import Geofence, Alert
 
 
 @dataclass
@@ -84,7 +84,7 @@ class GeofenceService:
             # Get all active geofences from database
             async with async_session_maker() as db:
                 result = await db.execute(
-                    select(Geofence).where(Geofence.is_active == True)
+                    select(Geofence).where(Geofence.is_active)
                 )
                 geofences = result.scalars().all()
                 
