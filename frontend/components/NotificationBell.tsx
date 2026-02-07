@@ -21,18 +21,21 @@ interface NotificationBellProps {
     apiUrl?: string
 }
 
-export function NotificationBell({ apiUrl = 'http://localhost:8000' }: NotificationBellProps) {
+export function NotificationBell({ apiUrl }: NotificationBellProps) {
+    // Use environment variable, with fallback to localhost for local dev
+    const effectiveApiUrl = apiUrl || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
     const [alerts, setAlerts] = useState<Alert[]>([])
     const [unreadCount, setUnreadCount] = useState(0)
     const [isOpen, setIsOpen] = useState(false)
     const [loading, setLoading] = useState(false)
     const wsRef = useRef<WebSocket | null>(null)
 
-    const wsUrl = apiUrl.replace('http://', 'ws://').replace('https://', 'wss://') + '/ws/alerts'
+    const wsUrl = effectiveApiUrl.replace('http://', 'ws://').replace('https://', 'wss://') + '/ws/alerts'
 
     const loadAlerts = useCallback(async () => {
         try {
-            const response = await fetchWithAuth(`${apiUrl}/api/alerts?limit=10`)
+            const response = await fetchWithAuth(`${effectiveApiUrl}/api/alerts?limit=10`)
             if (response.ok) {
                 const data = await response.json()
                 setAlerts(data)
@@ -40,11 +43,11 @@ export function NotificationBell({ apiUrl = 'http://localhost:8000' }: Notificat
         } catch (err) {
             console.error('Failed to load alerts:', err)
         }
-    }, [apiUrl])
+    }, [effectiveApiUrl])
 
     const loadUnreadCount = useCallback(async () => {
         try {
-            const response = await fetchWithAuth(`${apiUrl}/api/alerts/unread-count`)
+            const response = await fetchWithAuth(`${effectiveApiUrl}/api/alerts/unread-count`)
             if (response.ok) {
                 const data = await response.json()
                 setUnreadCount(data.unread_count)
@@ -52,7 +55,7 @@ export function NotificationBell({ apiUrl = 'http://localhost:8000' }: Notificat
         } catch (err) {
             console.error('Failed to load unread count:', err)
         }
-    }, [apiUrl])
+    }, [effectiveApiUrl])
 
     // Connect to WebSocket for real-time alerts
     useEffect(() => {
