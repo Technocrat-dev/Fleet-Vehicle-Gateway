@@ -272,10 +272,10 @@ async def update_geofence(
 @router.delete("/geofences/{geofence_id}")
 async def delete_geofence(
     geofence_id: int,
-    current_user: User = Depends(require_admin),  # Only admins can delete
+    current_user: User = Depends(require_manager),  # Managers+ can delete their own
     db: AsyncSession = Depends(get_db),
 ):
-    """Delete a geofence. Requires admin role."""
+    """Delete a geofence. Requires manager role."""
     result = await db.execute(
         select(Geofence).where(
             Geofence.id == geofence_id,
