@@ -113,10 +113,10 @@ _alert_clients: set = set()
 async def websocket_alerts(websocket: WebSocket):
     """
     WebSocket endpoint for real-time alert notifications.
-    
+
     Clients receive geofence alerts as they occur.
     Each message is a JSON object with alert data.
-    
+
     Example message:
     {
         "type": "alert",
@@ -131,12 +131,12 @@ async def websocket_alerts(websocket: WebSocket):
     """
     await websocket.accept()
     _alert_clients.add(websocket)
-    
+
     print(f"🔔 Alert WebSocket client connected (total: {len(_alert_clients)})")
-    
+
     # Register callback with geofence service
     from app.services.geofence_service import geofence_service
-    
+
     async def alert_callback(alert: dict):
         """Send alert to this WebSocket client."""
         try:
@@ -144,26 +144,24 @@ async def websocket_alerts(websocket: WebSocket):
             await websocket.send_text(json.dumps(message, default=str))
         except Exception:
             pass
-    
+
     geofence_service.register_alert_callback(alert_callback)
-    
+
     try:
         # Keep connection alive
         while True:
             try:
-                data = await asyncio.wait_for(
-                    websocket.receive_text(), timeout=30.0
-                )
-                
+                data = await asyncio.wait_for(websocket.receive_text(), timeout=30.0)
+
                 message = json.loads(data)
                 if message.get("type") == "ping":
                     await websocket.send_text(json.dumps({"type": "pong"}))
-                    
+
             except asyncio.TimeoutError:
                 await websocket.send_text(json.dumps({"type": "heartbeat"}))
             except json.JSONDecodeError:
                 pass
-                
+
     except WebSocketDisconnect:
         pass
     except Exception as e:

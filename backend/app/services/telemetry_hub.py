@@ -128,7 +128,7 @@ class TelemetryHub:
 
         # Broadcast to WebSocket clients
         await self._broadcast(telemetry)
-        
+
         # Check geofences for this vehicle
         await self._check_geofences(telemetry)
 
@@ -272,10 +272,10 @@ class TelemetryHub:
         """Check if vehicle has entered/exited any geofences."""
         try:
             from app.services.geofence_service import geofence_service
-            
+
             lat = telemetry.location.latitude
             lng = telemetry.location.longitude
-            
+
             await geofence_service.check_vehicle(
                 vehicle_id=telemetry.vehicle_id,
                 latitude=lat,
