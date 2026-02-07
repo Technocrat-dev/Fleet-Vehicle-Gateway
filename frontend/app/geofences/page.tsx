@@ -18,7 +18,7 @@ interface GeofenceMapProps {
 
 // Dynamic import for map (SSR disabled)
 const GeofenceMap = dynamic<GeofenceMapProps>(
-    () => import('./GeofenceMapComponent'),
+    () => import('./GeofenceMapComponent').then(mod => mod.default),
     {
         ssr: false,
         loading: () => (
