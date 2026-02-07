@@ -60,6 +60,7 @@ async def lifespan(app: FastAPI):
 
     # Run database migrations (fix user roles, etc.)
     from app.core.migrations import run_migrations
+
     await run_migrations()
 
     # Start Kafka consumer in background

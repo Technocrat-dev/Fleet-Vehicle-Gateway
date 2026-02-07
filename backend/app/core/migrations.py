@@ -18,18 +18,18 @@ logger = get_logger(__name__)
 async def run_migrations():
     """Run all database migrations on startup."""
     logger.info("Running database migrations...")
-    
+
     async with async_session_maker() as db:
         await migrate_user_roles(db)
         await db.commit()
-    
+
     logger.info("Database migrations completed")
 
 
 async def migrate_user_roles(db: AsyncSession):
     """
     Migration: Ensure all users have a valid role.
-    
+
     This fixes users created before the role system was implemented,
     or users with NULL role values.
     """
@@ -38,16 +38,16 @@ async def migrate_user_roles(db: AsyncSession):
         text("SELECT COUNT(*) FROM users WHERE role IS NULL OR role = ''")
     )
     count = result.scalar()
-    
+
     if count > 0:
         logger.info(f"Found {count} users with NULL/empty role, setting to 'user'")
-        
+
         # Update all users with NULL or empty role to 'user'
         await db.execute(
             text("UPDATE users SET role = :role WHERE role IS NULL OR role = ''"),
-            {"role": UserRole.USER.value}
+            {"role": UserRole.USER.value},
         )
-        
+
         logger.info(f"Updated {count} users to role='user'")
     else:
         logger.info("All users have valid roles")
