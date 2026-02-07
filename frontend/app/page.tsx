@@ -104,13 +104,13 @@ export default function LandingPage() {
         },
         {
             icon: <BarChart3 className="w-6 h-6" />,
-            title: "Advanced Reporting",
-            description: "Comprehensive analytics dashboards with historical trends, route analysis, and driver performance."
+            title: "Live Analytics",
+            description: "Real-time occupancy charts, latency metrics, and route distribution visualizations."
         },
         {
             icon: <Users className="w-6 h-6" />,
-            title: "Driver Management",
-            description: "Track driver behavior, safety scores, and performance. Improve fleet efficiency and safety."
+            title: "Role-Based Access",
+            description: "Admin and User roles with secure OAuth authentication via Google and GitHub."
         }
     ]
 

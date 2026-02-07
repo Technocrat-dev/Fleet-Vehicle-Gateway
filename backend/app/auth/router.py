@@ -8,13 +8,13 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import RedirectResponse
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.logging import get_logger
-from app.models.db_models import User, RefreshToken, APIKey
+from app.models.db_models import User, RefreshToken, APIKey, UserRole
 from app.auth.security import (
     verify_password,
     get_password_hash,
@@ -75,17 +75,30 @@ async def register(
             detail="Email already registered",
         )
 
+    # Check if this is the first user - make them admin
+    count_result = await db.execute(select(func.count(User.id)))
+    user_count = count_result.scalar() or 0
+    is_first_user = user_count == 0
+    role = UserRole.ADMIN.value if is_first_user else UserRole.USER.value
+
     # Create user
     user = User(
         email=user_data.email,
         hashed_password=get_password_hash(user_data.password),
         full_name=user_data.full_name,
+        role=role,
     )
     db.add(user)
     await db.commit()
     await db.refresh(user)
 
-    logger.info("user_registered", user_id=user.id, email=user.email)
+    logger.info(
+        "user_registered",
+        user_id=user.id,
+        email=user.email,
+        role=role,
+        is_first_user=is_first_user,
+    )
 
     # Generate tokens
     return await _create_token_response(user, db)
@@ -475,14 +488,19 @@ async def _handle_oauth_user(user_info, db: AsyncSession) -> OAuthCallbackRespon
             if user_info.avatar_url:
                 user.avatar_url = user_info.avatar_url
         else:
-            # Create new user
+            # Create new user - check if first user for admin role
             is_new_user = True
+            count_result = await db.execute(select(func.count(User.id)))
+            user_count = count_result.scalar() or 0
+            role = UserRole.ADMIN.value if user_count == 0 else UserRole.USER.value
+
             user = User(
                 email=user_info.email,
                 full_name=user_info.full_name,
                 oauth_provider=user_info.provider,
                 oauth_id=user_info.oauth_id,
                 avatar_url=user_info.avatar_url,
+                role=role,
             )
             db.add(user)
 

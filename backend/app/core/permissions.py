@@ -10,13 +10,8 @@ from app.models.db_models import User, UserRole
 
 # Role hierarchy - higher roles include permissions of lower roles
 ROLE_HIERARCHY = {
-    UserRole.ADMIN.value: [
-        UserRole.ADMIN.value,
-        UserRole.MANAGER.value,
-        UserRole.VIEWER.value,
-    ],
-    UserRole.MANAGER.value: [UserRole.MANAGER.value, UserRole.VIEWER.value],
-    UserRole.VIEWER.value: [UserRole.VIEWER.value],
+    UserRole.ADMIN.value: [UserRole.ADMIN.value, UserRole.USER.value],
+    UserRole.USER.value: [UserRole.USER.value],
 }
 
 
@@ -27,12 +22,12 @@ class RoleChecker:
     Usage:
         # Require admin role
         @router.get("/admin-only")
-        async def admin_route(user: User = Depends(require_role([UserRole.ADMIN]))):
+        async def admin_route(user: User = Depends(require_admin)):
             pass
 
-        # Require manager or admin role
-        @router.get("/manager-route")
-        async def manager_route(user: User = Depends(require_role([UserRole.MANAGER]))):
+        # Any authenticated user
+        @router.get("/user-route")
+        async def user_route(user: User = Depends(require_user)):
             pass
     """
 
@@ -91,19 +86,15 @@ def require_role(
         # Only admins
         require_admin = require_role([UserRole.ADMIN])
 
-        # Managers and admins (due to hierarchy)
-        require_manager = require_role([UserRole.MANAGER])
-
-        # Any authenticated user
-        require_viewer = require_role([UserRole.VIEWER])
+        # Any authenticated user (admin or regular user)
+        require_user = require_role([UserRole.USER])
     """
     return RoleChecker(allowed_roles, use_hierarchy)
 
 
 # Convenience dependencies
 require_admin = require_role([UserRole.ADMIN])
-require_manager = require_role([UserRole.MANAGER])
-require_viewer = require_role([UserRole.VIEWER])
+require_user = require_role([UserRole.USER])  # Any authenticated user
 
 
 def check_resource_ownership(resource_user_id: int, current_user: User) -> bool:

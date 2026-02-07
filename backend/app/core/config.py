@@ -55,7 +55,8 @@ class Settings(BaseSettings):
     KAFKA_TOPIC_TELEMETRY: str = "fleet-telemetry"
     KAFKA_CONSUMER_GROUP: str = "fleet-backend"
 
-    # GCP (Optional - for future use)
+    # GCP (NOT IMPLEMENTED - placeholders for potential future use)
+    # To implement: pip install google-cloud-bigquery google-cloud-storage
     GCP_PROJECT_ID: Optional[str] = None
     GCP_CREDENTIALS_PATH: Optional[str] = None
     GCS_BUCKET_NAME: Optional[str] = None

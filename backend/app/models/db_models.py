@@ -23,11 +23,14 @@ from app.core.database import Base
 
 
 class UserRole(str, PyEnum):
-    """User roles for access control."""
+    """User roles for access control.
+    
+    ADMIN: Full access - user management, all features
+    USER: Standard access - dashboard, own geofences, alerts
+    """
 
     ADMIN = "admin"
-    MANAGER = "manager"
-    VIEWER = "viewer"
+    USER = "user"
 
 
 class User(Base):
@@ -53,7 +56,7 @@ class User(Base):
 
     # Role-based access control
     role: Mapped[str] = mapped_column(
-        String(20), default=UserRole.VIEWER.value, nullable=False
+        String(20), default=UserRole.USER.value, nullable=False
     )
 
     # Status

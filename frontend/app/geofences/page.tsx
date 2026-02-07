@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import {
     MapPin, Plus, Trash2, Edit2, Bell, BellOff,
-    ArrowLeft, Check, X, AlertTriangle
+    ArrowLeft, Check, X, AlertTriangle, Info
 } from 'lucide-react'
 import { fetchWithAuth } from '@/lib/auth'
 
@@ -110,14 +110,38 @@ export default function GeofencesPage() {
                                 <h1 className="text-xl font-bold text-slate-800 dark:text-white">
                                     Geofences
                                 </h1>
+                                <span className="px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 rounded-full">
+                                    Demo
+                                </span>
                             </div>
                         </div>
-                        {/* Button moved to main content area */}
+                        <button
+                            onClick={() => setShowCreateModal(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
+                        >
+                            <Plus className="w-4 h-4" />
+                            <span className="hidden sm:inline">Create Geofence</span>
+                        </button>
                     </div>
                 </div>
             </header>
 
             <main className="container mx-auto px-6 py-8">
+                {/* Demo Info Banner */}
+                <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                    <div className="flex items-start gap-3">
+                        <Info className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                            <h3 className="font-medium text-blue-800 dark:text-blue-300">How Geofences Work</h3>
+                            <p className="text-sm text-blue-700 dark:text-blue-400 mt-1">
+                                Geofences define virtual boundaries. When alerts are enabled, notifications are
+                                triggered when vehicles enter or exit these zones. In demo mode, vehicle positions
+                                are simulated around Tokyo.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 {error && (
                     <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-400 flex items-center gap-2">
                         <AlertTriangle className="w-5 h-5" />

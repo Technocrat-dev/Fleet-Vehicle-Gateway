@@ -8,7 +8,7 @@ import {
     LogOut, RefreshCw, Wifi, WifiOff, MapPin
 } from 'lucide-react'
 import { useFleetWebSocket, VehicleStatus } from '@/lib/websocket'
-import { logout } from '@/lib/auth'
+import { logout, getCurrentUser, User } from '@/lib/auth'
 import { StatsCard } from '@/components/StatsCard'
 import { VehicleGrid } from '@/components/VehicleGrid'
 import { LatencyChart } from '@/components/LatencyChart'
@@ -30,6 +30,12 @@ export default function DashboardPage() {
     const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws/telemetry'
     const { vehicles, summary, isConnected, error, messageCount } = useFleetWebSocket(wsUrl)
     const [selectedVehicle, setSelectedVehicle] = useState<VehicleStatus | null>(null)
+    const [currentUser, setCurrentUser] = useState<User | null>(null)
+
+    // Load current user to check role
+    useEffect(() => {
+        getCurrentUser().then(setCurrentUser)
+    }, [])
 
     const vehicleArray = Array.from(vehicles.values())
 
@@ -52,10 +58,24 @@ export default function DashboardPage() {
                                 <h1 className="text-xl font-bold text-slate-800 dark:text-white">
                                     Fleet Dashboard
                                 </h1>
+                                <span className="px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 rounded-full">
+                                    Demo
+                                </span>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-4">
+                            {/* Admin Link - only show for admins */}
+                            {currentUser?.role === 'admin' && (
+                                <Link
+                                    href="/admin/users"
+                                    className="flex items-center gap-2 px-3 py-2 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-colors text-sm"
+                                >
+                                    <Shield className="w-4 h-4 text-purple-500" />
+                                    <span className="text-purple-600 dark:text-purple-400">Users</span>
+                                </Link>
+                            )}
+
                             {/* Geofences Link */}
                             <Link
                                 href="/geofences"
