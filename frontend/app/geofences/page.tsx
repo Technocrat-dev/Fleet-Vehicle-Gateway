@@ -330,6 +330,8 @@ function GeofenceModal({ geofence, onClose, onSave, apiUrl }: GeofenceModalProps
                 ? `${apiUrl}/api/geofences/${geofence.id}`
                 : `${apiUrl}/api/geofences`
 
+            console.log('Creating geofence:', { url, name, polygon, alertOnEnter, alertOnExit, color })
+
             const response = await fetchWithAuth(url, {
                 method: geofence ? 'PUT' : 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -343,14 +345,19 @@ function GeofenceModal({ geofence, onClose, onSave, apiUrl }: GeofenceModalProps
                 }),
             })
 
+            console.log('Response status:', response.status)
+
             if (response.ok) {
+                console.log('Geofence created successfully')
                 onSave()
             } else {
-                const data = await response.json()
-                setError(data.detail || 'Failed to save geofence')
+                const data = await response.json().catch(() => ({}))
+                console.error('Geofence creation failed:', data)
+                setError(data.detail || `Failed to save geofence (${response.status})`)
             }
         } catch (err) {
-            setError('Error saving geofence')
+            console.error('Geofence creation error:', err)
+            setError(`Error saving geofence: ${err instanceof Error ? err.message : String(err)}`)
         } finally {
             setSaving(false)
         }
