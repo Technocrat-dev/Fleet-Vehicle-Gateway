@@ -1,4 +1,4 @@
-# 🚗 Fleet Vehicle Data Gateway
+# Fleet Vehicle Data Gateway
 
 > **Production-grade demonstration of a real-time fleet monitoring system with edge-to-cloud data pipeline**
 
@@ -7,39 +7,39 @@ A modern, full-stack platform for vehicle fleet management featuring real-time t
 [![CI](https://github.com/Technocrat-dev/Fleet-Vehicle-Gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/Technocrat-dev/Fleet-Vehicle-Gateway/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-**🌐 Live Demo:** [Fleet Dashboard](https://fleet-vehicle-gateway-production.up.railway.app)
+** Live Demo:** [Fleet Dashboard](https://fleet-vehicle-gateway-production.up.railway.app)
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Features](#-features)
-- [Architecture](#️-architecture)
+- [Architecture](#-architecture)
 - [Tech Stack](#-tech-stack)
 - [Quick Start](#-quick-start)
 - [Deployment](#-deployment)
 - [API Documentation](#-api-documentation)
 - [Project Structure](#-project-structure)
-- [Configuration](#️-configuration)
+- [Configuration](#-configuration)
 - [Contributing](#-contributing)
 
 ---
 
-## ✨ Features
+## Features
 
-### 🗺️ Real-Time Fleet Monitoring
+### Real-Time Fleet Monitoring
 - **Live Vehicle Tracking**: Interactive Leaflet map with real-time position updates for 50 simulated vehicles
 - **WebSocket Streaming**: Sub-second latency telemetry delivery via WebSocket connections
 - **Vehicle Details**: Per-vehicle view with GPS coordinates, speed, occupancy, and AI inference metrics
 - **Dark Mode**: Fully responsive UI with light/dark theme support
 
-### 🔔 Intelligent Geofencing
+### Intelligent Geofencing
 - **Polygon Drawing**: Interactive map-based geofence creation with unlimited vertices
 - **Enter/Exit Alerts**: Automatic notifications when vehicles cross geofence boundaries
 - **Alert Cooldown**: 5-minute cooldown prevents alert spam for the same vehicle
 - **Multi-User Support**: Each user manages their own geofences with role-based access control
 
-### 🔐 Authentication & Authorization
+### Authentication & Authorization
 - **Multiple Auth Methods**: 
   - Google OAuth 2.0
   - GitHub OAuth
@@ -50,17 +50,17 @@ A modern, full-stack platform for vehicle fleet management featuring real-time t
 - **First User Auto-Admin**: First registered user automatically becomes admin
 - **Session Management**: Secure cookie-based sessions with automatic token refresh
 
-### 📊 Analytics & Insights
+### Analytics & Insights
 - **Occupancy Trends**: Historical data visualization with Recharts
 - **Fleet Statistics**: Real-time metrics for active vehicles, total distance, average speed
 - **Alert Dashboard**: Centralized view of all geofence events with severity filtering
 
-### 🛡️ Privacy & Compliance
+### Privacy & Compliance
 - **GDPR-Compliant**: Built-in consent management and data anonymization
 - **Privacy Engine**: Configurable rules for data redaction and anonymization
 - **User Privacy Controls**: Per-user consent status tracking
 
-### 🔧 Production-Ready
+### Production-Ready
 - **CI/CD Pipeline**: Automated testing, linting, and deployment via GitHub Actions
 - **Containerized**: Full Docker Compose orchestration for all services
 - **Health Checks**: Kubernetes-ready liveness and readiness probes
@@ -70,7 +70,7 @@ A modern, full-stack platform for vehicle fleet management featuring real-time t
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```mermaid
 graph TB
@@ -126,7 +126,7 @@ graph TB
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Backend
 | Component | Technology | Purpose |
@@ -164,7 +164,7 @@ graph TB
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -254,7 +254,7 @@ npm run dev
 
 ---
 
-## 🌐 Deployment
+## Deployment
 
 ### Production Deployment (Railway + Vercel)
 
@@ -325,7 +325,7 @@ The project includes GitHub Actions workflows:
 
 ---
 
-## 📚 API Documentation
+## API Documentation
 
 ### Authentication
 
@@ -391,7 +391,7 @@ The project includes GitHub Actions workflows:
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 fleet-vehicle-gateway/
@@ -471,40 +471,40 @@ fleet-vehicle-gateway/
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 ### Backend Environment Variables
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `DATABASE_URL` | ✅ | - | PostgreSQL connection string (asyncpg format) |
-| `SECRET_KEY` | ✅ | - | JWT signing key (min 32 chars) |
-| `APP_ENV` | ❌ | `development` | Environment: `development`, `production` |
-| `DEBUG` | ❌ | `false` | Enable debug mode |
-| `BACKEND_HOST` | ❌ | `0.0.0.0` | Server bind address |
-| `BACKEND_PORT` | ❌ | `8000` | Server port |
-| `CORS_ORIGINS` | ❌ | `["*"]` | Allowed CORS origins (JSON array) |
-| `GOOGLE_CLIENT_ID` | ❌ | - | Google OAuth client ID |
-| `GOOGLE_CLIENT_SECRET` | ❌ | - | Google OAuth secret |
-| `GITHUB_CLIENT_ID` | ❌ | - | GitHub OAuth client ID |
-| `GITHUB_CLIENT_SECRET` | ❌ | - | GitHub OAuth secret |
-| `OAUTH_REDIRECT_URL` | ❌ | - | OAuth callback URL |
-| `KAFKA_ENABLED` | ❌ | `false` | Enable Kafka consumer |
-| `KAFKA_BOOTSTRAP_SERVERS` | ❌ | `localhost:19092` | Kafka broker addresses |
-| `SIMULATOR_VEHICLE_COUNT` | ❌ | `50` | Number of simulated vehicles |
-| `SIMULATOR_UPDATE_INTERVAL_MS` | ❌ | `1000` | Telemetry update frequency (ms) |
+| `DATABASE_URL` |  | - | PostgreSQL connection string (asyncpg format) |
+| `SECRET_KEY` |  | - | JWT signing key (min 32 chars) |
+| `APP_ENV` |  | `development` | Environment: `development`, `production` |
+| `DEBUG` |  | `false` | Enable debug mode |
+| `BACKEND_HOST` |  | `0.0.0.0` | Server bind address |
+| `BACKEND_PORT` |  | `8000` | Server port |
+| `CORS_ORIGINS` |  | `["*"]` | Allowed CORS origins (JSON array) |
+| `GOOGLE_CLIENT_ID` |  | - | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` |  | - | Google OAuth secret |
+| `GITHUB_CLIENT_ID` |  | - | GitHub OAuth client ID |
+| `GITHUB_CLIENT_SECRET` |  | - | GitHub OAuth secret |
+| `OAUTH_REDIRECT_URL` |  | - | OAuth callback URL |
+| `KAFKA_ENABLED` |  | `false` | Enable Kafka consumer |
+| `KAFKA_BOOTSTRAP_SERVERS` |  | `localhost:19092` | Kafka broker addresses |
+| `SIMULATOR_VEHICLE_COUNT` |  | `50` | Number of simulated vehicles |
+| `SIMULATOR_UPDATE_INTERVAL_MS` |  | `1000` | Telemetry update frequency (ms) |
 
 ### Frontend Environment Variables
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `NEXT_PUBLIC_API_URL` | ✅ | - | Backend API base URL |
+| `NEXT_PUBLIC_API_URL` |  | - | Backend API base URL |
 
 **Note**: All `NEXT_PUBLIC_*` variables are embedded at build time and exposed to the browser.
 
 ---
 
-## 🧪 Testing
+## Testing
 
 ### Backend Tests
 
@@ -558,7 +558,7 @@ curl http://localhost:3000
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please follow these guidelines:
 
@@ -583,13 +583,13 @@ All PRs must:
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **FastAPI** - Lightning-fast async framework
 - **Next.js** - The React framework for production
@@ -599,7 +599,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ---
 
-## 📧 Contact
+## Contact
 
 **Developer**: Manas Sharma  
 **GitHub**: [@Technocrat-dev](https://github.com/Technocrat-dev)  
@@ -607,4 +607,4 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ---
 
-**Built with ❤️ for demonstrating production engineering skills**
+**Built with  for demonstrating production engineering skills**
