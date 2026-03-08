@@ -1,0 +1,22 @@
+# Dependencies (rebuilt in Docker)
+node_modules/
+
+# Build output
+.next/
+
+# Environment
+.env
+.env.*
+.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+.dockerignore

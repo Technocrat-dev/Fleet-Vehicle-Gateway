@@ -1,0 +1,9 @@
+# Cloud Build upload filter
+node_modules/
+.next/
+.env
+.env.*
+.env.local
+.git/
+.vscode/
+.idea/
