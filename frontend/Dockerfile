@@ -14,10 +14,13 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Set environment variables for build
+# Build-time arguments for API URL (injected by Cloud Build or docker build --build-arg)
+ARG NEXT_PUBLIC_API_URL=http://localhost:8000
+ARG NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws/telemetry
+
 ENV NEXT_TELEMETRY_DISABLED 1
-ENV NEXT_PUBLIC_API_URL=http://localhost:8000
-ENV NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws/telemetry
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
 
 RUN npm run build
 

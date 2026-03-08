@@ -68,8 +68,12 @@ class Settings(BaseSettings):
     SIMULATOR_UPDATE_INTERVAL_MS: int = 1000
     SIMULATOR_DEMO_MODE: bool = True
 
+    def model_post_init(self, __context):
+        # Auto-add FRONTEND_URL to CORS_ORIGINS if not already present
+        if self.FRONTEND_URL and self.FRONTEND_URL not in self.CORS_ORIGINS:
+            self.CORS_ORIGINS.append(self.FRONTEND_URL)
+
     class Config:
-        # .env file is optional - Railway uses environment variables directly
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = True
