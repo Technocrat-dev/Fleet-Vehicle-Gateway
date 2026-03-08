@@ -2,34 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --foreground: #0f172a;
-  --background: #f1f5f9;
-  --card: #ffffff;
-  --card-foreground: #0f172a;
-  --primary: #3b82f6;
-  --primary-foreground: #ffffff;
-}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground: #f1f5f9;
-    --background: #0f172a;
-    --card: #1e293b;
-    --card-foreground: #f1f5f9;
-  }
+:root {
+  --bg-deep: #0a0e1a;
+  --bg-surface: #111627;
+  --bg-elevated: #1a1f35;
+  --bg-hover: #222845;
+  --border: rgba(255, 255, 255, 0.06);
+  --border-accent: rgba(6, 214, 160, 0.2);
+  --text-primary: #e8eaf0;
+  --text-secondary: #6b7194;
+  --text-muted: #464b6b;
+  --accent: #06d6a0;
+  --accent-dim: #059f78;
+  --accent-warm: #f4a261;
+  --danger: #e63946;
+  --success: #2ec475;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text-primary);
+  background: var(--bg-deep);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -37,23 +40,70 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #64748b;
-  border-radius: 4px;
+  background: var(--text-muted);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: var(--text-secondary);
+}
+
+/* Glass card base */
+.glass {
+  background: rgba(17, 22, 39, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+}
+
+.glass-light {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+}
+
+.glass-accent {
+  background: rgba(6, 214, 160, 0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-accent);
+}
+
+/* Card hover */
+.card-hover {
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Glow effects */
+.glow-teal {
+  box-shadow: 0 0 20px rgba(6, 214, 160, 0.15), 0 0 60px rgba(6, 214, 160, 0.05);
+}
+
+.glow-amber {
+  box-shadow: 0 0 20px rgba(244, 162, 97, 0.15), 0 0 60px rgba(244, 162, 97, 0.05);
+}
+
+/* Stats number */
+.stat-number {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
 /* Leaflet map styles */
 .leaflet-container {
   height: 100%;
   width: 100%;
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
   z-index: 0 !important;
 }
 
-/* Ensure Leaflet controls don't escape the map container */
 .leaflet-pane,
 .leaflet-control-container {
   z-index: 1 !important;
@@ -63,7 +113,7 @@ body {
   z-index: 2 !important;
 }
 
-/* Vehicle marker pulse animation */
+/* Vehicle marker pulse */
 .vehicle-marker {
   animation: pulse 2s infinite;
 }
@@ -79,39 +129,51 @@ body {
   }
 }
 
-/* Card hover effect */
-.card-hover {
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1);
-}
-
-/* Stats number animation */
-.stat-number {
-  font-variant-numeric: tabular-nums;
-}
-
-/* Connection status indicator */
+/* Connection status */
 .connection-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  animation: blink 1s infinite;
+  animation: blink 1.5s infinite;
 }
 
 .connection-dot.connected {
-  background-color: #22c55e;
+  background-color: var(--success);
 }
 
 .connection-dot.disconnected {
-  background-color: #ef4444;
+  background-color: var(--danger);
   animation: none;
 }
 
 @keyframes blink {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  50% { opacity: 0.4; }
+}
+
+/* Gradient text utility */
+.text-gradient {
+  background: linear-gradient(135deg, var(--accent), var(--accent-warm));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Subtle grid pattern for hero backgrounds */
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* Noise texture overlay */
+.noise::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.015;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  border-radius: inherit;
 }

@@ -1,5 +1,5 @@
 /**
- * Vehicle Grid Component - Shows all vehicles in a grid layout
+ * Vehicle Grid Component
  */
 
 import { VehicleStatus } from '@/lib/websocket'
@@ -12,7 +12,7 @@ interface VehicleGridProps {
 export function VehicleGrid({ vehicles }: VehicleGridProps) {
     if (vehicles.length === 0) {
         return (
-            <div className="text-center py-12 text-slate-500">
+            <div className="text-center py-12 text-[var(--text-muted)]">
                 Waiting for vehicle data...
             </div>
         )
@@ -28,33 +28,47 @@ export function VehicleGrid({ vehicles }: VehicleGridProps) {
 }
 
 function VehicleCard({ vehicle }: { vehicle: VehicleStatus }) {
+    const occupancyRatio = vehicle.occupancy_count / 8
     const occupancyColor =
-        vehicle.occupancy_count >= 7 ? 'text-red-500' :
-            vehicle.occupancy_count >= 4 ? 'text-yellow-500' :
-                'text-green-500'
+        occupancyRatio >= 0.85 ? 'text-[var(--danger)]' :
+            occupancyRatio >= 0.5 ? 'text-[var(--accent-warm)]' :
+                'text-[var(--success)]'
+
+    const barColor =
+        occupancyRatio >= 0.85 ? 'bg-[var(--danger)]' :
+            occupancyRatio >= 0.5 ? 'bg-[var(--accent-warm)]' :
+                'bg-[var(--success)]'
 
     return (
-        <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+        <div className="glass-light rounded-lg p-3 card-hover group cursor-default">
             <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                <span className="text-xs font-semibold text-[var(--text-secondary)] tracking-wide">
                     {vehicle.vehicle_id.replace('vehicle-', 'V-')}
                 </span>
-                <span className={`text-xs ${vehicle.is_active ? 'text-green-500' : 'text-slate-400'}`}>
-                    ●
+                <span className={`text-[10px] ${vehicle.is_active ? 'text-[var(--success)]' : 'text-[var(--text-muted)]'}`}>
+                    {vehicle.is_active ? '●' : '○'}
                 </span>
             </div>
 
-            {/* Occupancy indicator */}
-            <div className="flex items-center gap-1 mb-2">
-                <User className={`w-4 h-4 ${occupancyColor}`} />
-                <span className={`text-lg font-bold ${occupancyColor}`}>
+            {/* Occupancy bar */}
+            <div className="flex items-center gap-2 mb-2">
+                <User className={`w-3.5 h-3.5 ${occupancyColor}`} />
+                <span className={`text-lg font-bold ${occupancyColor} stat-number`}>
                     {vehicle.occupancy_count}
                 </span>
-                <span className="text-xs text-slate-400">/ 8</span>
+                <span className="text-[10px] text-[var(--text-muted)]">/ 8</span>
+            </div>
+
+            {/* Capacity bar */}
+            <div className="w-full h-1 bg-white/[0.04] rounded-full mb-2 overflow-hidden">
+                <div
+                    className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+                    style={{ width: `${Math.min(occupancyRatio * 100, 100)}%`, opacity: 0.7 }}
+                />
             </div>
 
             {/* Mini stats */}
-            <div className="flex items-center justify-between text-xs text-slate-500">
+            <div className="flex items-center justify-between text-[10px] text-[var(--text-muted)]">
                 <div className="flex items-center gap-1">
                     <Clock className="w-3 h-3" />
                     <span>{vehicle.inference_latency_ms.toFixed(1)}ms</span>

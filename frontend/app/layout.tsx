@@ -13,7 +13,7 @@ export default function RootLayout({
     children: React.ReactNode
 }) {
     return (
-        <html lang="en">
+        <html lang="en" className="dark">
             <head>
                 <link
                     rel="stylesheet"
@@ -22,7 +22,7 @@ export default function RootLayout({
                     crossOrigin=""
                 />
             </head>
-            <body className="min-h-screen bg-slate-50 dark:bg-slate-900">
+            <body className="min-h-screen bg-surface-deep text-[var(--text-primary)] antialiased">
                 {children}
             </body>
         </html>
