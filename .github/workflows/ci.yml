@@ -33,7 +33,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest pytest-asyncio httpx ruff black
+          pip install pytest pytest-asyncio httpx aiosqlite ruff black
       
       - name: Lint with ruff
         run: ruff check app/
@@ -43,7 +43,6 @@ jobs:
       
       - name: Run tests
         run: pytest tests/ -v --tb=short
-        continue-on-error: true  # Tests are minimal for now
 
   # Frontend Tests
   frontend-test:

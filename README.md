@@ -257,72 +257,60 @@ npm run dev
 
 ## Deployment
 
-### Production Deployment (Railway + Vercel)
+### Production Deployment (GCP Cloud Run)
 
-This project uses a **split deployment** strategy:
-- **Backend** → Railway (PostgreSQL + FastAPI)
-- **Frontend** → Vercel (Next.js)
+Both the backend and frontend are deployed as containers on Google Cloud Run (free tier). The database is hosted on Neon (free tier PostgreSQL).
 
-#### Backend on Railway
+| Service | URL |
+|---------|-----|
+| Backend API | `https://fleet-api-<project-number>.us-central1.run.app` |
+| Frontend | `https://fleet-frontend-<project-number>.us-central1.run.app` |
+| API Docs | `https://fleet-api-<project-number>.us-central1.run.app/docs` |
 
-1. **Create Railway Project**:
-   ```bash
-   # Install Railway CLI
-   npm install -g @railway/cli
-   
-   # Login and deploy
-   railway login
-   cd backend
-   railway up
-   ```
+#### Manual Deploy
 
-2. **Add PostgreSQL Database**:
-   - Go to Railway Dashboard → Add Service → PostgreSQL
-   - Copy `DATABASE_URL` from Variables tab
+If you have `gcloud` configured, deploy directly:
 
-3. **Set Environment Variables**:
-   ```env
-   DATABASE_URL=<from-railway-postgres>
-   SECRET_KEY=<generate-with-openssl-rand-hex-32>
-   GOOGLE_CLIENT_ID=<from-google-console>
-   GOOGLE_CLIENT_SECRET=<from-google-console>
-   OAUTH_REDIRECT_URL=https://<your-backend>.up.railway.app/auth/callback
-   CORS_ORIGINS=["https://<your-frontend>.vercel.app"]
-   APP_ENV=production
-   DEBUG=false
-   ```
+```bash
+# Backend
+cd backend
+gcloud builds submit --config=cloudbuild.yaml
+gcloud run deploy fleet-api \
+  --image us-central1-docker.pkg.dev/$PROJECT_ID/fleet-gateway-repo/fleet-api:latest \
+  --region us-central1 --allow-unauthenticated --port 8000
 
-4. **Deploy**:
-   - Railway auto-deploys from `main` branch
-   - Check logs: `railway logs`
-
-#### Frontend on Vercel
-
-1. **Connect GitHub Repo**:
-   - Go to https://vercel.com/new
-   - Import your GitHub repository
-   - Set Root Directory: `frontend`
-
-2. **Configure Environment Variables**:
-   ```env
-   NEXT_PUBLIC_API_URL=https://<your-backend>.up.railway.app
-   ```
-
-3. **Deploy**:
-   - Vercel auto-deploys on push to `main`
-   - Preview deployments for PRs
+# Frontend
+cd frontend
+gcloud builds submit --config=cloudbuild.yaml \
+  --substitutions=_API_URL=https://your-api-url,_WS_URL=wss://your-api-url/ws/telemetry
+gcloud run deploy fleet-frontend \
+  --image us-central1-docker.pkg.dev/$PROJECT_ID/fleet-gateway-repo/fleet-frontend:latest \
+  --region us-central1 --allow-unauthenticated --port 3000
+```
 
 #### CI/CD Pipeline
 
-The project includes GitHub Actions workflows:
+The project uses GitHub Actions for automated testing and deployment:
 
-- **CI** (`.github/workflows/ci.yml`): Runs on every push
-  - Backend: `ruff` lint, `black` format check, `pytest`
+- **CI** (`.github/workflows/ci.yml`): Runs on every push and PR
+  - Backend: `ruff` lint, `black` format check, `pytest` (47 tests)
   - Frontend: `eslint`, TypeScript check, build verification
   - Docker: Multi-stage build validation
 
 - **CD** (`.github/workflows/cd.yml`): Runs on push to `main`
-  - Auto-deploys to Railway (backend) and Vercel (frontend)
+  - Authenticates to GCP via Workload Identity Federation (keyless)
+  - Builds and pushes images to Artifact Registry
+  - Deploys to Cloud Run (backend first, then frontend)
+
+**Required GitHub Secrets** for CD:
+
+| Secret | Description |
+|--------|-------------|
+| `GCP_PROJECT_ID` | Your GCP project ID |
+| `GCP_WIF_PROVIDER` | Workload Identity Federation provider resource name |
+| `GCP_SA_EMAIL` | Service account email for deployments |
+| `API_URL` | Backend API URL (for frontend build) |
+| `WS_URL` | WebSocket URL (for frontend build) |
 
 ---
 
