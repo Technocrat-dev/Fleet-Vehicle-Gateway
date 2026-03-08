@@ -7,8 +7,6 @@ A modern, full-stack platform for vehicle fleet management featuring real-time t
 [![CI](https://github.com/Technocrat-dev/Fleet-Vehicle-Gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/Technocrat-dev/Fleet-Vehicle-Gateway/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-** Live Demo:** [Fleet Dashboard](fleet-vehicle-gateway.vercel.app)
-
 ---
 
 ## Table of Contents
