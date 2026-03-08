@@ -15,6 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import async_session_maker
+from app.core.geo_utils import point_in_polygon
 from app.models.db_models import Geofence, Alert
 
 
@@ -42,10 +43,15 @@ class GeofenceService:
     # Cooldown period between alerts for same vehicle/geofence
     ALERT_COOLDOWN_SECONDS = 300  # 5 minutes
 
+    # Cache active geofences to avoid DB queries on every tick
+    CACHE_TTL_SECONDS = 30
+
     def __init__(self):
         self.vehicle_states: Dict[str, VehicleGeofenceState] = {}
         self._lock = asyncio.Lock()
         self._alert_callbacks: List = []  # Callbacks to notify on new alerts
+        self._geofence_cache: List = []
+        self._cache_timestamp: Optional[datetime] = None
 
     def register_alert_callback(self, callback):
         """Register a callback to be called when new alerts are created."""
@@ -82,17 +88,16 @@ class GeofenceService:
             now = datetime.now(timezone.utc)
             alerts_generated = []
 
-            # Get all active geofences from database
+            # Get active geofences (cached to avoid DB queries on every tick)
             async with async_session_maker() as db:
-                result = await db.execute(select(Geofence).where(Geofence.is_active))
-                geofences = result.scalars().all()
+                geofences = await self._get_active_geofences(db)
 
                 # Check each geofence
                 currently_inside = set()
 
                 for geofence in geofences:
                     polygon = json.loads(geofence.polygon)
-                    is_inside = self._point_in_polygon(latitude, longitude, polygon)
+                    is_inside = point_in_polygon(latitude, longitude, polygon)
 
                     if is_inside:
                         currently_inside.add(geofence.id)
@@ -207,34 +212,21 @@ class GeofenceService:
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
 
-    @staticmethod
-    def _point_in_polygon(lat: float, lng: float, polygon: dict) -> bool:
-        """
-        Check if a point is inside a GeoJSON polygon using ray casting algorithm.
-        """
-        if polygon.get("type") != "Polygon":
-            return False
+    async def _get_active_geofences(self, db: AsyncSession) -> List:
+        """Return active geofences, using a time-based cache to reduce DB load."""
+        now = datetime.now(timezone.utc)
 
-        coordinates = polygon.get("coordinates", [[]])
-        if not coordinates or not coordinates[0]:
-            return False
+        if (
+            self._cache_timestamp is not None
+            and (now - self._cache_timestamp).total_seconds() < self.CACHE_TTL_SECONDS
+            and self._geofence_cache
+        ):
+            return self._geofence_cache
 
-        ring = coordinates[0]  # Outer ring
-        n = len(ring)
-        inside = False
-
-        j = n - 1
-        for i in range(n):
-            xi, yi = ring[i][0], ring[i][1]  # lng, lat in GeoJSON
-            xj, yj = ring[j][0], ring[j][1]
-
-            if ((yi > lat) != (yj > lat)) and (
-                lng < (xj - xi) * (lat - yi) / (yj - yi) + xi
-            ):
-                inside = not inside
-            j = i
-
-        return inside
+        result = await db.execute(select(Geofence).where(Geofence.is_active))
+        self._geofence_cache = list(result.scalars().all())
+        self._cache_timestamp = now
+        return self._geofence_cache
 
     def get_stats(self) -> Dict[str, Any]:
         """Get service statistics."""

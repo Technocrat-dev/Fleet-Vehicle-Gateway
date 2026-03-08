@@ -10,7 +10,10 @@ Provides REST API endpoints for privacy management:
 from typing import Optional
 from datetime import datetime
 
-from fastapi import APIRouter, Query, HTTPException, Request
+from fastapi import APIRouter, Query, HTTPException, Request, Depends
+
+from app.auth.dependencies import get_current_user
+from app.models.db_models import User
 
 router = APIRouter(prefix="/privacy", tags=["privacy"])
 
@@ -21,7 +24,10 @@ def get_hub(request: Request):
 
 
 @router.get("/stats")
-async def get_privacy_stats(request: Request):
+async def get_privacy_stats(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
     """
     Get privacy engine statistics.
 
@@ -46,6 +52,7 @@ async def get_audit_log(
     request: Request,
     vehicle_id: Optional[str] = Query(None, description="Filter by vehicle ID"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum entries to return"),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get privacy audit log entries.
@@ -82,7 +89,11 @@ async def get_audit_log(
 
 
 @router.get("/dsar/{vehicle_id}")
-async def get_data_subject_report(vehicle_id: str, request: Request):
+async def get_data_subject_report(
+    vehicle_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
     """
     Generate GDPR Data Subject Access Request (DSAR) report.
 
@@ -109,7 +120,11 @@ async def get_data_subject_report(vehicle_id: str, request: Request):
 
 
 @router.get("/consent/{vehicle_id}")
-async def get_consent_status(vehicle_id: str, request: Request):
+async def get_consent_status(
+    vehicle_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
     """
     Get consent status for a specific vehicle.
 
@@ -134,7 +149,10 @@ async def get_consent_status(vehicle_id: str, request: Request):
 
 
 @router.get("/retention-policy")
-async def get_retention_policy(request: Request):
+async def get_retention_policy(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+):
     """
     Get current data retention policy configuration.
 

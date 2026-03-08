@@ -3,10 +3,33 @@ WebSocket API - Real-time telemetry streaming.
 """
 
 import asyncio
+from typing import Optional
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 import json
 
+from app.auth.security import decode_token
+
 router = APIRouter()
+
+
+async def _authenticate_ws(websocket: WebSocket) -> Optional[int]:
+    """
+    Optionally authenticate a WebSocket connection via query parameter.
+
+    Clients may pass ``?token=<jwt>`` to authenticate.  If the token is
+    valid the user-id is returned; otherwise ``None`` is returned and the
+    connection is still allowed (for backward compatibility).
+    """
+    token = websocket.query_params.get("token")
+    if not token:
+        return None
+
+    try:
+        payload = decode_token(token)
+        user_id = payload.get("sub") if payload else None
+        return int(user_id) if user_id else None
+    except Exception:
+        return None
 
 
 @router.websocket("/ws/telemetry")
@@ -29,11 +52,15 @@ async def websocket_telemetry(websocket: WebSocket):
     """
     await websocket.accept()
 
+    # Optional authentication
+    user_id = await _authenticate_ws(websocket)
+    auth_label = f"user={user_id}" if user_id else "anonymous"
+
     # Get hub from app state
     hub = websocket.app.state.telemetry_hub
     hub.register_client(websocket)
 
-    print(f"🔌 WebSocket client connected (total: {len(hub.websocket_clients)})")
+    print(f"🔌 WebSocket client connected [{auth_label}] (total: {len(hub.websocket_clients)})")
 
     try:
         # Send initial fleet state

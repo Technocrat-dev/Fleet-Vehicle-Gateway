@@ -183,9 +183,9 @@ class TelemetryHub:
     def get_all_vehicles(self) -> List[VehicleStatus]:
         """Get current status of all tracked vehicles."""
         return [
-            self.get_vehicle(vid)
+            status
             for vid in self.vehicles.keys()
-            if self.get_vehicle(vid) is not None
+            if (status := self.get_vehicle(vid)) is not None
         ]
 
     def get_fleet_summary(self) -> FleetSummary:

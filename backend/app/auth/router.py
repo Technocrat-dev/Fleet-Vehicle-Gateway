@@ -179,7 +179,7 @@ async def refresh_token(
         )
 
     # Check expiration
-    if token_record.expires_at < datetime.now(timezone.utc):
+    if token_record.expires_at < datetime.now(timezone.utc).replace(tzinfo=None):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",

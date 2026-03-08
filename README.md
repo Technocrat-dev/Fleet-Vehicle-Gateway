@@ -1,13 +1,13 @@
 # Fleet Vehicle Data Gateway
 
-> **Production-grade demonstration of a real-time fleet monitoring system with edge-to-cloud data pipeline**
+> Production-grade real-time fleet monitoring system with edge-to-cloud data pipeline
 
-A modern, full-stack platform for vehicle fleet management featuring real-time telemetry streaming, geofencing with intelligent alerts, OAuth authentication, and privacy-compliant data processing. Built with FastAPI, Next.js, and PostgreSQL.
+A full-stack platform for vehicle fleet management with real-time telemetry streaming, geofencing with alerts, OAuth authentication, and privacy-compliant data processing. Built with FastAPI, Next.js, and PostgreSQL.
 
 [![CI](https://github.com/Technocrat-dev/Fleet-Vehicle-Gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/Technocrat-dev/Fleet-Vehicle-Gateway/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-** Live Demo:** [Fleet Dashboard](https://fleet-vehicle-gateway-production.up.railway.app)
+**Live Demo:** [Fleet Dashboard](https://fleet-vehicle-gateway-production.up.railway.app)
 
 ---
 
@@ -33,31 +33,32 @@ A modern, full-stack platform for vehicle fleet management featuring real-time t
 - **Vehicle Details**: Per-vehicle view with GPS coordinates, speed, occupancy, and AI inference metrics
 - **Dark Mode**: Fully responsive UI with light/dark theme support
 
-### Intelligent Geofencing
+### Geofencing
 - **Polygon Drawing**: Interactive map-based geofence creation with unlimited vertices
-- **Enter/Exit Alerts**: Automatic notifications when vehicles cross geofence boundaries
+- **Enter/Exit Alerts**: Notifications when vehicles cross geofence boundaries
 - **Alert Cooldown**: 5-minute cooldown prevents alert spam for the same vehicle
+- **Geofence Caching**: Active geofences are cached (30s TTL) to reduce database load during high-frequency telemetry processing
 - **Multi-User Support**: Each user manages their own geofences with role-based access control
 
-### Authentication & Authorization
-- **Multiple Auth Methods**: 
-  - Google OAuth 2.0
-  - GitHub OAuth
-  - Email/Password with JWT
+### Authentication and Authorization
+- **Multiple Auth Methods**: Google OAuth 2.0, GitHub OAuth, Email/Password with JWT
+- **Password Hashing**: Direct `bcrypt` integration for reliable cross-platform password handling
 - **Role-Based Access Control (RBAC)**:
   - **Admin**: Full system access, user management
   - **User**: Dashboard access, personal geofences, alerts
 - **First User Auto-Admin**: First registered user automatically becomes admin
 - **Session Management**: Secure cookie-based sessions with automatic token refresh
+- **WebSocket Auth**: Optional JWT-based authentication for WebSocket connections via query parameter
 
 ### Analytics & Insights
 - **Occupancy Trends**: Historical data visualization with Recharts
 - **Fleet Statistics**: Real-time metrics for active vehicles, total distance, average speed
 - **Alert Dashboard**: Centralized view of all geofence events with severity filtering
 
-### Privacy & Compliance
+### Privacy and Compliance
 - **GDPR-Compliant**: Built-in consent management and data anonymization
 - **Privacy Engine**: Configurable rules for data redaction and anonymization
+- **Authenticated Privacy API**: All privacy endpoints require valid JWT authentication
 - **User Privacy Controls**: Per-user consent status tracking
 
 ### Production-Ready
@@ -135,7 +136,7 @@ graph TB
 | **Runtime** | Python 3.11 | Modern Python with async/await support |
 | **Database** | PostgreSQL 16 | Relational database with PostGIS support |
 | **ORM** | SQLAlchemy 2.0 | Async ORM for database operations |
-| **Auth** | Authlib + python-jose | OAuth 2.0 and JWT token handling |
+| **Auth** | Authlib + python-jose + bcrypt | OAuth 2.0, JWT tokens, password hashing |
 | **WebSocket** | websockets 12.0 | Real-time bidirectional communication |
 | **Validation** | Pydantic 2.5 | Data validation and settings management |
 | **Streaming** | Redpanda (optional) | Kafka-compatible event streaming |
@@ -375,7 +376,7 @@ The project includes GitHub Actions workflows:
 
 | Endpoint | Protocol | Auth | Description |
 |----------|----------|------|-------------|
-| `/ws/telemetry` | WebSocket | Required | Real-time telemetry stream |
+| `/ws/telemetry` | WebSocket | Optional | Real-time telemetry stream (pass `?token=<jwt>` for authenticated sessions) |
 | `/ws/alerts` | WebSocket | Required | Real-time alert notifications |
 
 ### System
@@ -400,18 +401,20 @@ fleet-vehicle-gateway/
 │   │   ├── api/                   # REST & WebSocket endpoints
 │   │   │   ├── analytics.py       # Analytics endpoints
 │   │   │   ├── geofencing.py      # Geofence CRUD + alert system
-│   │   │   ├── privacy.py         # Privacy controls
+│   │   │   ├── privacy.py         # Privacy controls (authenticated)
 │   │   │   ├── users.py           # User management
 │   │   │   ├── vehicles.py        # Vehicle endpoints
-│   │   │   └── websocket.py       # WebSocket handlers
+│   │   │   └── websocket.py       # WebSocket handlers (optional auth)
 │   │   ├── auth/                  # Authentication
 │   │   │   ├── dependencies.py    # Auth dependencies
 │   │   │   ├── jwt.py             # JWT token handling
 │   │   │   ├── oauth.py           # OAuth providers (Google, GitHub)
-│   │   │   └── router.py          # Auth routes
+│   │   │   ├── router.py          # Auth routes
+│   │   │   └── security.py        # Password hashing (bcrypt) + token utils
 │   │   ├── core/                  # Core configuration
 │   │   │   ├── config.py          # Settings management
 │   │   │   ├── database.py        # DB connection & session
+│   │   │   ├── geo_utils.py       # Shared geometry utilities
 │   │   │   ├── logging.py         # Structured logging setup
 │   │   │   ├── migrations.py      # Startup migrations
 │   │   │   └── permissions.py     # RBAC logic
@@ -419,13 +422,13 @@ fleet-vehicle-gateway/
 │   │   │   ├── db_models.py       # SQLAlchemy ORM models
 │   │   │   └── schemas.py         # Pydantic request/response schemas
 │   │   ├── services/              # Business logic
-│   │   │   ├── geofence_service.py  # Geofence monitoring engine
+│   │   │   ├── geofence_service.py  # Geofence monitoring (with caching)
 │   │   │   ├── kafka_consumer.py    # Kafka telemetry consumer
 │   │   │   ├── privacy_engine.py    # GDPR anonymization engine
 │   │   │   ├── simulator_service.py # Vehicle telemetry simulator
 │   │   │   └── telemetry_hub.py     # WebSocket broadcast hub
 │   │   └── main.py                # FastAPI app entrypoint
-│   ├── tests/                     # Backend tests
+│   ├── tests/                     # Backend tests (47 tests)
 │   ├── Dockerfile                 # Backend container
 │   └── requirements.txt           # Python dependencies
 │
@@ -508,11 +511,13 @@ fleet-vehicle-gateway/
 
 ### Backend Tests
 
+The backend has 47 tests covering authentication, API endpoints, health checks, and core services (privacy engine, telemetry hub, geofence utilities).
+
 ```bash
 cd backend
 
 # Install dev dependencies
-pip install pytest pytest-asyncio pytest-cov httpx
+pip install pytest pytest-asyncio pytest-cov httpx aiosqlite
 
 # Run all tests
 pytest
@@ -522,6 +527,7 @@ pytest --cov=app tests/
 
 # Run specific test file
 pytest tests/test_auth.py -v
+pytest tests/test_services.py -v
 ```
 
 ### Frontend Tests
@@ -591,11 +597,11 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ## Acknowledgments
 
-- **FastAPI** - Lightning-fast async framework
-- **Next.js** - The React framework for production
-- **Leaflet** - Open-source interactive maps
-- **Redpanda** - Kafka-compatible streaming platform
-- **Railway** & **Vercel** - Deployment platforms
+- [FastAPI](https://fastapi.tiangolo.com/) - Async Python web framework
+- [Next.js](https://nextjs.org/) - React framework
+- [Leaflet](https://leafletjs.com/) - Open-source interactive maps
+- [Redpanda](https://redpanda.com/) - Kafka-compatible streaming
+- [Railway](https://railway.app/) and [Vercel](https://vercel.com/) - Deployment platforms
 
 ---
 
@@ -604,7 +610,3 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 **Developer**: Manas Sharma  
 **GitHub**: [@Technocrat-dev](https://github.com/Technocrat-dev)  
 **Project Link**: [Fleet Vehicle Gateway](https://github.com/Technocrat-dev/Fleet-Vehicle-Gateway)
-
----
-
-**Built with  for demonstrating production engineering skills**

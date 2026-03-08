@@ -70,7 +70,7 @@ async def test_db(test_engine) -> AsyncGenerator[AsyncSession, None]:
 
 
 @pytest_asyncio.fixture(scope="function")
-async def client(test_db: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
+async def client(test_db: AsyncSession, test_engine) -> AsyncGenerator[AsyncClient, None]:
     """Create test HTTP client with test database."""
     
     # Override the database dependency
@@ -78,11 +78,24 @@ async def client(test_db: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
         yield test_db
     
     app.dependency_overrides[get_db] = override_get_db
+
+    # Provide a TelemetryHub so vehicle/analytics endpoints work
+    from app.services.telemetry_hub import TelemetryHub
+    app.state.telemetry_hub = TelemetryHub(enable_privacy=False)
+
+    # Point the health check at the test engine instead of the real DB
+    import app.core.database as db_module
+    _original_engine = db_module.engine
+    db_module.engine = test_engine
     
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
     
+    # Restore originals
+    db_module.engine = _original_engine
+    if hasattr(app.state, "telemetry_hub"):
+        del app.state.telemetry_hub
     app.dependency_overrides.clear()
 
 

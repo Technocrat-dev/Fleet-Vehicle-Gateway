@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependencies import get_current_user, get_db
 from app.models.db_models import User, Geofence, Alert
 from app.core.permissions import require_user
+from app.core.geo_utils import point_in_polygon
 
 router = APIRouter()
 
@@ -72,35 +73,6 @@ class AlertResponse(BaseModel):
     class Config:
         from_attributes = True
 
-
-# Helper function to check point in polygon
-def point_in_polygon(lat: float, lng: float, polygon: dict) -> bool:
-    """
-    Check if a point is inside a GeoJSON polygon using ray casting algorithm.
-    """
-    if polygon.get("type") != "Polygon":
-        return False
-
-    coordinates = polygon.get("coordinates", [[]])
-    if not coordinates or not coordinates[0]:
-        return False
-
-    ring = coordinates[0]  # Outer ring
-    n = len(ring)
-    inside = False
-
-    j = n - 1
-    for i in range(n):
-        xi, yi = ring[i][0], ring[i][1]  # lng, lat in GeoJSON
-        xj, yj = ring[j][0], ring[j][1]
-
-        if ((yi > lat) != (yj > lat)) and (
-            lng < (xj - xi) * (lat - yi) / (yj - yi) + xi
-        ):
-            inside = not inside
-        j = i
-
-    return inside
 
 
 # Geofence CRUD endpoints
