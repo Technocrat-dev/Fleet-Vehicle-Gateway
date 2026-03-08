@@ -60,7 +60,9 @@ async def websocket_telemetry(websocket: WebSocket):
     hub = websocket.app.state.telemetry_hub
     hub.register_client(websocket)
 
-    print(f"🔌 WebSocket client connected [{auth_label}] (total: {len(hub.websocket_clients)})")
+    print(
+        f"🔌 WebSocket client connected [{auth_label}] (total: {len(hub.websocket_clients)})"
+    )
 
     try:
         # Send initial fleet state

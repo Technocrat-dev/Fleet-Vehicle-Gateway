@@ -74,7 +74,6 @@ class AlertResponse(BaseModel):
         from_attributes = True
 
 
-
 # Geofence CRUD endpoints
 @router.post("/geofences", response_model=GeofenceResponse)
 async def create_geofence(
