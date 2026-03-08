@@ -142,11 +142,13 @@ export default function LandingPage() {
                         <div className="relative">
                             <div className="absolute inset-0 bg-gradient-to-t from-surface-deep via-transparent to-transparent z-10 pointer-events-none" />
                             <div className="glass rounded-xl overflow-hidden">
-                                <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-[rgba(255,255,255,0.06)]">
-                                    <div className="w-2.5 h-2.5 rounded-full bg-[var(--danger)] opacity-70" />
-                                    <div className="w-2.5 h-2.5 rounded-full bg-[var(--accent-warm)] opacity-70" />
-                                    <div className="w-2.5 h-2.5 rounded-full bg-[var(--success)] opacity-70" />
-                                    <span className="ml-3 text-xs text-[var(--text-muted)]">fleet-gateway/dashboard</span>
+                                <div className="flex items-center justify-between px-4 py-2.5 border-b border-[rgba(255,255,255,0.06)]">
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
+                                        <span className="text-[10px] text-[var(--text-muted)] font-medium tracking-wide">LIVE</span>
+                                    </div>
+                                    <span className="text-xs text-[var(--text-muted)]">fleet-gateway/dashboard</span>
+                                    <span className="text-[10px] text-[var(--text-muted)]">50 vehicles</span>
                                 </div>
                                 <div className="p-5 bg-surface">
                                     <div className="grid grid-cols-4 gap-3 mb-4">
