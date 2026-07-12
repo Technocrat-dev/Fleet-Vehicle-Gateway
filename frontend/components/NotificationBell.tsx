@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Bell, X, Check, AlertTriangle, Info, AlertCircle } from 'lucide-react'
+import { Bell } from 'lucide-react'
 import { fetchWithAuth } from '@/lib/auth'
 
 interface Alert {
@@ -21,14 +21,17 @@ interface NotificationBellProps {
     apiUrl?: string
 }
 
+const severityDot: Record<string, string> = {
+    critical: 'bg-crit',
+    warning: 'bg-warn',
+}
+
 export function NotificationBell({ apiUrl }: NotificationBellProps) {
-    // Use environment variable, with fallback to localhost for local dev
     const effectiveApiUrl = apiUrl || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
     const [alerts, setAlerts] = useState<Alert[]>([])
     const [unreadCount, setUnreadCount] = useState(0)
     const [isOpen, setIsOpen] = useState(false)
-    const [loading, setLoading] = useState(false)
     const wsRef = useRef<WebSocket | null>(null)
 
     const wsUrl = effectiveApiUrl.replace('http://', 'ws://').replace('https://', 'wss://') + '/ws/alerts'
@@ -37,8 +40,7 @@ export function NotificationBell({ apiUrl }: NotificationBellProps) {
         try {
             const response = await fetchWithAuth(`${effectiveApiUrl}/api/alerts?limit=10`)
             if (response.ok) {
-                const data = await response.json()
-                setAlerts(data)
+                setAlerts(await response.json())
             }
         } catch (err) {
             console.error('Failed to load alerts:', err)
@@ -57,56 +59,34 @@ export function NotificationBell({ apiUrl }: NotificationBellProps) {
         }
     }, [effectiveApiUrl])
 
-    // Connect to WebSocket for real-time alerts
+    // Real-time alerts over WebSocket
     useEffect(() => {
+        let closedByCleanup = false
+        let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+
         const connectWebSocket = () => {
             try {
                 const ws = new WebSocket(wsUrl)
 
-                ws.onopen = () => {
-                    console.log('🔔 Alert WebSocket connected')
-                }
-
                 ws.onmessage = (event) => {
                     try {
                         const message = JSON.parse(event.data)
-
                         if (message.type === 'alert') {
-                            // New alert received - update UI
+                            // Refetch instead of splicing the pushed payload in:
+                            // the push has no database id, and the list needs real
+                            // ids for mark-as-read to work.
                             setUnreadCount(prev => prev + 1)
-
-                            // Add to alerts list if panel is open
-                            const newAlert: Alert = {
-                                id: Date.now(), // Temporary ID
-                                alert_type: message.alert_type,
-                                title: message.title,
-                                message: message.message,
-                                severity: message.severity,
-                                vehicle_id: message.vehicle_id,
-                                geofence_id: message.geofence_id,
-                                is_read: false,
-                                is_acknowledged: false,
-                                created_at: message.created_at || new Date().toISOString(),
-                            }
-
-                            setAlerts(prev => [newAlert, ...prev.slice(0, 9)])
-
-                            // Play notification sound (optional)
-                            // new Audio('/notification.mp3').play().catch(() => {})
+                            loadAlerts()
                         }
-                    } catch (e) {
+                    } catch {
                         // Ignore parse errors for heartbeat messages
                     }
                 }
 
-                ws.onerror = (error) => {
-                    console.error('Alert WebSocket error:', error)
-                }
-
                 ws.onclose = () => {
-                    console.log('🔔 Alert WebSocket disconnected, reconnecting...')
-                    // Reconnect after 5 seconds
-                    setTimeout(connectWebSocket, 5000)
+                    if (!closedByCleanup) {
+                        reconnectTimer = setTimeout(connectWebSocket, 5000)
+                    }
                 }
 
                 wsRef.current = ws
@@ -118,16 +98,15 @@ export function NotificationBell({ apiUrl }: NotificationBellProps) {
         connectWebSocket()
 
         return () => {
-            if (wsRef.current) {
-                wsRef.current.close()
-            }
+            closedByCleanup = true
+            if (reconnectTimer) clearTimeout(reconnectTimer)
+            wsRef.current?.close()
         }
-    }, [wsUrl])
+    }, [wsUrl, loadAlerts])
 
-    // Initial load
+    // Initial load + slow poll as backup
     useEffect(() => {
         loadUnreadCount()
-        // Also poll as backup every 30 seconds
         const interval = setInterval(loadUnreadCount, 30000)
         return () => clearInterval(interval)
     }, [loadUnreadCount])
@@ -140,11 +119,9 @@ export function NotificationBell({ apiUrl }: NotificationBellProps) {
 
     const markAsRead = async (alertId: number) => {
         try {
-            await fetchWithAuth(`${apiUrl}/api/alerts/${alertId}/read`, {
-                method: 'POST',
-            })
-            setAlerts(alerts.map(a => a.id === alertId ? { ...a, is_read: true } : a))
-            setUnreadCount(Math.max(0, unreadCount - 1))
+            await fetchWithAuth(`${effectiveApiUrl}/api/alerts/${alertId}/read`, { method: 'POST' })
+            setAlerts(prev => prev.map(a => a.id === alertId ? { ...a, is_read: true } : a))
+            setUnreadCount(prev => Math.max(0, prev - 1))
         } catch (err) {
             console.error('Failed to mark alert as read:', err)
         }
@@ -152,122 +129,82 @@ export function NotificationBell({ apiUrl }: NotificationBellProps) {
 
     const markAllAsRead = async () => {
         try {
-            await fetchWithAuth(`${apiUrl}/api/alerts/read-all`, {
-                method: 'POST',
-            })
-            setAlerts(alerts.map(a => ({ ...a, is_read: true })))
+            await fetchWithAuth(`${effectiveApiUrl}/api/alerts/read-all`, { method: 'POST' })
+            setAlerts(prev => prev.map(a => ({ ...a, is_read: true })))
             setUnreadCount(0)
         } catch (err) {
             console.error('Failed to mark all alerts as read:', err)
         }
     }
 
-    const getSeverityIcon = (severity: string) => {
-        switch (severity) {
-            case 'critical':
-                return <AlertCircle className="w-4 h-4 text-red-500" />
-            case 'warning':
-                return <AlertTriangle className="w-4 h-4 text-yellow-500" />
-            default:
-                return <Info className="w-4 h-4 text-blue-500" />
-        }
-    }
-
-    const getSeverityColor = (severity: string) => {
-        switch (severity) {
-            case 'critical':
-                return 'border-l-red-500'
-            case 'warning':
-                return 'border-l-yellow-500'
-            default:
-                return 'border-l-blue-500'
-        }
-    }
-
     const formatTime = (dateString: string) => {
-        const date = new Date(dateString)
-        const now = new Date()
-        const diff = now.getTime() - date.getTime()
-
-        if (diff < 60000) return 'Just now'
+        const diff = Date.now() - new Date(dateString).getTime()
+        if (diff < 60000) return 'just now'
         if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`
         if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`
-        return date.toLocaleDateString()
+        return new Date(dateString).toLocaleDateString()
     }
 
     return (
         <div className="relative">
-            {/* Bell Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="relative p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                className="relative p-2 text-ink-secondary hover:text-ink hover:bg-sunken rounded transition-colors"
+                title="Notifications"
             >
-                <Bell className={`w-5 h-5 ${unreadCount > 0 ? 'text-blue-500 animate-pulse' : 'text-slate-600 dark:text-slate-400'}`} />
+                <Bell className="w-4 h-4" />
                 {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-bounce">
+                    <span className="num absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-signal text-white text-[10px] font-medium rounded-full flex items-center justify-center">
                         {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                 )}
             </button>
 
-            {/* Dropdown */}
             {isOpen && (
                 <>
-                    {/* Backdrop */}
-                    <div
-                        className="fixed inset-0 z-40"
-                        onClick={() => setIsOpen(false)}
-                    />
+                    <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
 
-                    {/* Panel */}
-                    <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 z-50 overflow-hidden">
-                        {/* Header */}
-                        <div className="px-4 py-3 bg-slate-50 dark:bg-slate-700 border-b border-slate-200 dark:border-slate-600 flex items-center justify-between">
-                            <h3 className="font-semibold text-slate-800 dark:text-white">
-                                Notifications
-                            </h3>
+                    <div className="absolute right-0 top-full mt-2 w-80 bg-surface rounded border border-line shadow-[0_8px_24px_rgba(26,28,32,0.12)] z-50 overflow-hidden">
+                        <div className="px-4 py-2.5 border-b border-line flex items-center justify-between">
+                            <h3 className="text-sm font-semibold">Notifications</h3>
                             {unreadCount > 0 && (
                                 <button
                                     onClick={markAllAsRead}
-                                    className="text-xs text-blue-500 hover:text-blue-600 font-medium"
+                                    className="text-xs text-ink-secondary hover:text-ink font-medium"
                                 >
                                     Mark all read
                                 </button>
                             )}
                         </div>
 
-                        {/* Alert List */}
                         <div className="max-h-80 overflow-y-auto">
                             {alerts.length === 0 ? (
-                                <div className="p-6 text-center text-slate-500 dark:text-slate-400">
-                                    <Bell className="w-8 h-8 mx-auto mb-2 text-slate-300 dark:text-slate-600" />
-                                    <p>No notifications yet</p>
+                                <div className="p-6 text-center text-ink-muted">
+                                    <p className="text-sm">No notifications yet</p>
                                     <p className="text-xs mt-1">Geofence alerts will appear here</p>
                                 </div>
                             ) : (
                                 alerts.map((alert) => (
                                     <div
                                         key={alert.id}
-                                        className={`px-4 py-3 border-b border-slate-100 dark:border-slate-700 border-l-4 ${getSeverityColor(alert.severity)} ${!alert.is_read ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
-                                            } hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer`}
+                                        className={`px-4 py-3 border-b border-line last:border-b-0 hover:bg-sunken cursor-pointer transition-colors ${!alert.is_read ? 'bg-paper' : ''}`}
                                         onClick={() => !alert.is_read && markAsRead(alert.id)}
                                     >
-                                        <div className="flex items-start gap-3">
-                                            {getSeverityIcon(alert.severity)}
+                                        <div className="flex items-start gap-2.5">
+                                            <span
+                                                className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${severityDot[alert.severity] || 'bg-line-strong'}`}
+                                            />
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center justify-between gap-2">
-                                                    <h4 className="font-medium text-slate-800 dark:text-white text-sm truncate">
+                                                    <h4 className={`text-sm truncate ${alert.is_read ? 'text-ink-secondary' : 'font-medium'}`}>
                                                         {alert.title}
                                                     </h4>
-                                                    {!alert.is_read && (
-                                                        <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
-                                                    )}
+                                                    <span className="num text-[11px] text-ink-muted shrink-0">
+                                                        {formatTime(alert.created_at)}
+                                                    </span>
                                                 </div>
-                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">
+                                                <p className="text-xs text-ink-secondary mt-0.5 line-clamp-2">
                                                     {alert.message}
-                                                </p>
-                                                <p className="text-xs text-slate-400 mt-1">
-                                                    {formatTime(alert.created_at)}
                                                 </p>
                                             </div>
                                         </div>

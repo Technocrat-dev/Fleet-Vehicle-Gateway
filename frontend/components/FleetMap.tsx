@@ -1,50 +1,45 @@
 /**
- * Fleet Map Component - Interactive Leaflet map showing vehicle locations and geofences
+ * Fleet Map — Leaflet map showing vehicle locations and geofences.
  */
 
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polygon, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { VehicleStatus } from '@/lib/websocket'
 import { fetchWithAuth } from '@/lib/auth'
+import { occupancyLevel, STATUS_HEX, VEHICLE_CAPACITY } from '@/lib/constants'
 
-// Fix Leaflet default icon issue
-delete (L.Icon.Default.prototype as any)._getIconUrl
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-})
-
-// Custom vehicle icon
+// Vehicle marker: rounded square carrying the passenger count,
+// colored by the shared occupancy status scale.
 function createVehicleIcon(occupancy: number) {
-    const color = occupancy >= 7 ? '#ef4444' : occupancy >= 4 ? '#f59e0b' : '#22c55e'
+    const color = STATUS_HEX[occupancyLevel(occupancy)]
 
     return L.divIcon({
         className: 'vehicle-marker-icon',
         html: `
       <div style="
-        width: 28px;
-        height: 28px;
+        width: 26px;
+        height: 26px;
         background: ${color};
-        border: 2px solid white;
-        border-radius: 50%;
+        border: 2px solid #ffffff;
+        border-radius: 6px;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
+        color: #ffffff;
         font-size: 11px;
-        font-weight: bold;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        font-weight: 600;
+        font-family: var(--font-mono), monospace;
+        box-shadow: 0 1px 4px rgba(26, 28, 32, 0.35);
         cursor: pointer;
       ">
         ${occupancy}
       </div>
     `,
-        iconSize: [28, 28],
-        iconAnchor: [14, 14],
+        iconSize: [26, 26],
+        iconAnchor: [13, 13],
     })
 }
 
@@ -65,26 +60,36 @@ interface FleetMapProps {
     showGeofences?: boolean
 }
 
-// Component to fit map bounds to vehicles
+// Fit map bounds once, when vehicles first arrive
 function MapBoundsUpdater({ vehicles }: { vehicles: VehicleStatus[] }) {
     const map = useMap()
+    const hasFitRef = useRef(false)
 
     useEffect(() => {
-        if (vehicles.length > 0) {
+        if (vehicles.length > 0 && !hasFitRef.current) {
+            hasFitRef.current = true
             const bounds = L.latLngBounds(
                 vehicles.map(v => [v.location.latitude, v.location.longitude] as [number, number])
             )
             map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 })
         }
-    }, [vehicles.length > 0])  // Only run once when we first get vehicles
+    }, [vehicles, map])
 
     return null
 }
 
-// Convert GeoJSON coordinates to Leaflet format
+// Convert GeoJSON coordinates ([lng, lat]) to Leaflet format ([lat, lng])
 function geojsonToLeaflet(coordinates: number[][][]): [number, number][] {
-    // GeoJSON uses [lng, lat], Leaflet uses [lat, lng]
     return coordinates[0].map(([lng, lat]) => [lat, lng] as [number, number])
+}
+
+function PopupRow({ label, value }: { label: string; value: string }) {
+    return (
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', fontSize: '12px' }}>
+            <span style={{ color: '#565b64' }}>{label}</span>
+            <span style={{ fontFamily: 'var(--font-mono), monospace' }}>{value}</span>
+        </div>
+    )
 }
 
 export default function FleetMap({ vehicles, onVehicleClick, showGeofences = true }: FleetMapProps) {
@@ -94,7 +99,6 @@ export default function FleetMap({ vehicles, onVehicleClick, showGeofences = tru
     // Tokyo center coordinates
     const defaultCenter: [number, number] = [35.6762, 139.7503]
 
-    // Load geofences
     const loadGeofences = useCallback(async () => {
         if (!showGeofences) return
 
@@ -111,7 +115,6 @@ export default function FleetMap({ vehicles, onVehicleClick, showGeofences = tru
 
     useEffect(() => {
         loadGeofences()
-        // Refresh geofences every 30 seconds
         const interval = setInterval(loadGeofences, 30000)
         return () => clearInterval(interval)
     }, [loadGeofences])
@@ -121,7 +124,7 @@ export default function FleetMap({ vehicles, onVehicleClick, showGeofences = tru
     }
 
     return (
-        <div className="h-[400px] rounded-xl overflow-hidden relative z-0">
+        <div className="h-[400px] rounded overflow-hidden border border-line relative z-0">
             <MapContainer
                 center={defaultCenter}
                 zoom={12}
@@ -129,13 +132,12 @@ export default function FleetMap({ vehicles, onVehicleClick, showGeofences = tru
                 scrollWheelZoom={true}
             >
                 <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                    url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
                 />
 
                 <MapBoundsUpdater vehicles={vehicles} />
 
-                {/* Render geofence polygons */}
                 {geofences.map((geofence) => (
                     <Polygon
                         key={`geofence-${geofence.id}`}
@@ -143,22 +145,21 @@ export default function FleetMap({ vehicles, onVehicleClick, showGeofences = tru
                         pathOptions={{
                             color: geofence.color,
                             fillColor: geofence.color,
-                            fillOpacity: 0.2,
-                            weight: 2,
+                            fillOpacity: 0.12,
+                            weight: 1.5,
                         }}
                     >
                         <Popup>
-                            <div className="text-sm">
-                                <div className="font-bold mb-1">📍 {geofence.name}</div>
-                                <div className="text-xs text-gray-500">
-                                    {geofence.is_active ? '✅ Active' : '⚫ Inactive'}
-                                </div>
+                            <div style={{ fontSize: '12px' }}>
+                                <div style={{ fontWeight: 600, marginBottom: '2px' }}>{geofence.name}</div>
+                                <span style={{ color: geofence.is_active ? '#1a7f4b' : '#82878f' }}>
+                                    {geofence.is_active ? 'Active' : 'Inactive'}
+                                </span>
                             </div>
                         </Popup>
                     </Polygon>
                 ))}
 
-                {/* Render vehicles */}
                 {vehicles.map((vehicle) => (
                     <Marker
                         key={vehicle.vehicle_id}
@@ -169,25 +170,41 @@ export default function FleetMap({ vehicles, onVehicleClick, showGeofences = tru
                         }}
                     >
                         <Popup>
-                            <div className="text-sm">
-                                <div className="font-bold mb-1">{vehicle.vehicle_id}</div>
-                                <div>👤 Passengers: {vehicle.occupancy_count}</div>
-                                <div>⚡ Latency: {vehicle.inference_latency_ms.toFixed(1)}ms</div>
-                                {vehicle.speed_kmh && (
-                                    <div>🚗 Speed: {Math.round(vehicle.speed_kmh)} km/h</div>
-                                )}
-                                {vehicle.route_id && (
-                                    <div>📍 Route: {vehicle.route_id.replace('route-', '')}</div>
-                                )}
-                                <div className="text-xs text-gray-500 mt-1">
-                                    {vehicle.consent_status === 'granted' ? '✅ Consent' : '⚠️ Pending'}
+                            <div style={{ minWidth: '170px' }}>
+                                <div style={{ fontWeight: 600, fontSize: '13px', marginBottom: '6px', fontFamily: 'var(--font-mono), monospace' }}>
+                                    {vehicle.vehicle_id.replace('vehicle-', 'V-')}
+                                </div>
+                                <div style={{ display: 'grid', gap: '3px' }}>
+                                    <PopupRow label="Passengers" value={`${vehicle.occupancy_count}/${VEHICLE_CAPACITY}`} />
+                                    <PopupRow label="Latency" value={`${vehicle.inference_latency_ms.toFixed(1)} ms`} />
+                                    {vehicle.speed_kmh != null && (
+                                        <PopupRow label="Speed" value={`${Math.round(vehicle.speed_kmh)} km/h`} />
+                                    )}
+                                    {vehicle.route_id && (
+                                        <PopupRow label="Route" value={vehicle.route_id.replace('route-', '')} />
+                                    )}
+                                    <PopupRow
+                                        label="Consent"
+                                        value={vehicle.consent_status === 'granted' ? 'Granted' : 'Pending'}
+                                    />
                                 </div>
                                 {onVehicleClick && (
                                     <button
                                         onClick={() => onVehicleClick(vehicle)}
-                                        className="mt-2 w-full px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+                                        style={{
+                                            marginTop: '10px',
+                                            width: '100%',
+                                            padding: '5px 8px',
+                                            background: '#22314e',
+                                            color: '#ffffff',
+                                            fontSize: '12px',
+                                            fontWeight: 500,
+                                            border: 'none',
+                                            borderRadius: '4px',
+                                            cursor: 'pointer',
+                                        }}
                                     >
-                                        View Details
+                                        View details
                                     </button>
                                 )}
                             </div>

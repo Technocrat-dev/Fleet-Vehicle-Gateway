@@ -1,13 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
-import Link from 'next/link'
+import { useState, useEffect, useCallback } from 'react'
 import dynamic from 'next/dynamic'
-import {
-    MapPin, Plus, Trash2, Edit2, Bell, BellOff,
-    ArrowLeft, X, AlertTriangle, Info, MousePointer, Undo2
-} from 'lucide-react'
+import { Plus, Trash2, Edit2, X, Undo2 } from 'lucide-react'
 import { fetchWithAuth } from '@/lib/auth'
+import { PageHeader } from '@/components/PageHeader'
 
 // Interface for the map component props
 interface GeofenceMapProps {
@@ -23,8 +20,8 @@ const GeofenceMap = dynamic<GeofenceMapProps>(
     {
         ssr: false,
         loading: () => (
-            <div className="h-[400px] bg-slate-200 dark:bg-slate-700 rounded-xl animate-pulse flex items-center justify-center">
-                <span className="text-slate-500">Loading map...</span>
+            <div className="h-[350px] bg-sunken border border-line rounded flex items-center justify-center">
+                <span className="text-sm text-ink-muted">Loading map…</span>
             </div>
         )
     }
@@ -45,6 +42,8 @@ interface Geofence {
     created_at: string
     updated_at: string
 }
+
+const inputClass = 'w-full px-3 py-2 bg-surface border border-line-strong rounded text-sm text-ink placeholder:text-ink-muted focus:border-brand focus:ring-1 focus:ring-brand outline-none transition-colors'
 
 export default function GeofencesPage() {
     const [geofences, setGeofences] = useState<Geofence[]>([])
@@ -112,83 +111,52 @@ export default function GeofencesPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500" />
+            <div className="min-h-screen bg-paper flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-line-strong border-t-brand" />
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-slate-100 dark:bg-slate-900">
-            {/* Header */}
-            <header className="bg-white dark:bg-slate-800 shadow-sm sticky top-0 z-40">
-                <div className="container mx-auto px-6 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <Link
-                                href="/dashboard"
-                                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                            >
-                                <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-                            </Link>
-                            <div className="flex items-center gap-2">
-                                <MapPin className="w-6 h-6 text-blue-500" />
-                                <h1 className="text-xl font-bold text-slate-800 dark:text-white">
-                                    Geofences
-                                </h1>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => setShowCreateModal(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
-                        >
-                            <Plus className="w-4 h-4" />
-                            <span className="hidden sm:inline">Create Geofence</span>
-                        </button>
-                    </div>
-                </div>
-            </header>
+        <div className="min-h-screen bg-paper">
+            <PageHeader title="Geofences" backHref="/dashboard">
+                <button
+                    onClick={() => setShowCreateModal(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-brand hover:bg-brand-hover text-white rounded font-medium text-sm transition-colors"
+                >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">New geofence</span>
+                </button>
+            </PageHeader>
 
-            <main className="container mx-auto px-6 py-8">
-                {/* Info Banner */}
-                <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
-                    <div className="flex items-start gap-3">
-                        <Info className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                        <div>
-                            <h3 className="font-medium text-green-800 dark:text-green-300">Real-Time Geofence Notifications</h3>
-                            <p className="text-sm text-green-700 dark:text-green-400 mt-1">
-                                Draw custom geofences on the map! When vehicles enter or exit your zones,
-                                you'll receive instant notifications. Alerts refresh every 5 minutes per vehicle per zone.
-                            </p>
-                        </div>
-                    </div>
-                </div>
+            <main className="container mx-auto px-6 py-6">
+                <p className="text-sm text-ink-secondary mb-6 max-w-xl">
+                    Draw polygon zones on the map. When vehicles enter or exit a zone you
+                    receive a notification — alerts repeat at most every 5 minutes per
+                    vehicle per zone.
+                </p>
 
                 {error && (
-                    <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-400 flex items-center gap-2">
-                        <AlertTriangle className="w-5 h-5" />
+                    <div className="mb-6 px-4 py-3 bg-crit-bg text-crit rounded text-sm flex items-center gap-2">
                         {error}
-                        <button onClick={() => setError(null)} className="ml-auto">
+                        <button onClick={() => setError(null)} className="ml-auto" title="Dismiss">
                             <X className="w-4 h-4" />
                         </button>
                     </div>
                 )}
 
                 {geofences.length === 0 ? (
-                    <div className="text-center py-16">
-                        <MapPin className="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-                        <h2 className="text-xl font-semibold text-slate-600 dark:text-slate-400 mb-2">
-                            No Geofences Yet
-                        </h2>
-                        <p className="text-slate-500 dark:text-slate-500 mb-6">
+                    <div className="border border-line rounded bg-surface text-center py-16">
+                        <h2 className="text-base font-semibold mb-1">No geofences yet</h2>
+                        <p className="text-sm text-ink-secondary mb-5">
                             Create your first geofence to start monitoring vehicle locations.
                         </p>
                         <button
                             onClick={() => setShowCreateModal(true)}
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium transition-colors"
+                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand hover:bg-brand-hover text-white rounded font-medium text-sm transition-colors"
                         >
-                            <Plus className="w-5 h-5" />
-                            Create Your First Geofence
+                            <Plus className="w-4 h-4" />
+                            New geofence
                         </button>
                     </div>
                 ) : (
@@ -196,68 +164,61 @@ export default function GeofencesPage() {
                         {geofences.map((geofence) => (
                             <div
                                 key={geofence.id}
-                                className={`bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border-l-4 ${geofence.is_active ? '' : 'opacity-60'
-                                    }`}
-                                style={{ borderLeftColor: geofence.color }}
+                                className={`bg-surface border border-line rounded p-4 ${geofence.is_active ? '' : 'opacity-60'}`}
                             >
-                                <div className="flex items-start justify-between mb-4">
-                                    <div>
-                                        <h3 className="font-semibold text-slate-800 dark:text-white text-lg">
-                                            {geofence.name}
-                                        </h3>
+                                <div className="flex items-start justify-between gap-3 mb-3">
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <span
+                                                className="w-2.5 h-2.5 rounded-sm shrink-0"
+                                                style={{ backgroundColor: geofence.color }}
+                                            />
+                                            <h3 className="font-semibold text-sm truncate">
+                                                {geofence.name}
+                                            </h3>
+                                        </div>
                                         {geofence.description && (
-                                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                                            <p className="text-xs text-ink-secondary mt-1">
                                                 {geofence.description}
                                             </p>
                                         )}
                                     </div>
-                                    <div
-                                        className="w-4 h-4 rounded-full"
-                                        style={{ backgroundColor: geofence.color }}
-                                    />
                                 </div>
 
-                                <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400 mb-4">
-                                    <div className="flex items-center gap-1">
-                                        {geofence.alert_on_enter ? (
-                                            <Bell className="w-4 h-4 text-green-500" />
-                                        ) : (
-                                            <BellOff className="w-4 h-4 text-slate-400" />
-                                        )}
-                                        <span>Enter</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        {geofence.alert_on_exit ? (
-                                            <Bell className="w-4 h-4 text-green-500" />
-                                        ) : (
-                                            <BellOff className="w-4 h-4 text-slate-400" />
-                                        )}
-                                        <span>Exit</span>
-                                    </div>
+                                <div className="text-xs text-ink-secondary mb-3">
+                                    Alerts:{' '}
+                                    <span className="text-ink">
+                                        {[
+                                            geofence.alert_on_enter && 'enter',
+                                            geofence.alert_on_exit && 'exit',
+                                        ].filter(Boolean).join(', ') || 'off'}
+                                    </span>
                                 </div>
 
-                                <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700">
+                                <div className="flex items-center justify-between pt-3 border-t border-line">
                                     <button
                                         onClick={() => toggleGeofenceActive(geofence)}
-                                        className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${geofence.is_active
-                                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                            : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
+                                        className={`px-1.5 py-0.5 rounded-sm text-xs font-medium transition-colors ${geofence.is_active
+                                            ? 'bg-ok-bg text-ok'
+                                            : 'bg-sunken text-ink-secondary'
                                             }`}
                                     >
                                         {geofence.is_active ? 'Active' : 'Inactive'}
                                     </button>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1">
                                         <button
                                             onClick={() => setEditingGeofence(geofence)}
-                                            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                                            className="p-1.5 text-ink-secondary hover:text-ink hover:bg-sunken rounded transition-colors"
+                                            title="Edit"
                                         >
-                                            <Edit2 className="w-4 h-4 text-slate-500" />
+                                            <Edit2 className="w-3.5 h-3.5" />
                                         </button>
                                         <button
                                             onClick={() => deleteGeofence(geofence.id)}
-                                            className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                            className="p-1.5 text-ink-secondary hover:text-crit hover:bg-crit-bg rounded transition-colors"
+                                            title="Delete"
                                         >
-                                            <Trash2 className="w-4 h-4 text-red-500" />
+                                            <Trash2 className="w-3.5 h-3.5" />
                                         </button>
                                     </div>
                                 </div>
@@ -308,7 +269,7 @@ function GeofenceModal({ geofence, onClose, onSave, apiUrl }: GeofenceModalProps
     const [description, setDescription] = useState(geofence?.description || '')
     const [alertOnEnter, setAlertOnEnter] = useState(geofence?.alert_on_enter ?? true)
     const [alertOnExit, setAlertOnExit] = useState(geofence?.alert_on_exit ?? true)
-    const [color, setColor] = useState(geofence?.color || '#3B82F6')
+    const [color, setColor] = useState(geofence?.color || '#22314e')
     const [polygon, setPolygon] = useState<{ type: 'Polygon', coordinates: number[][][] } | null>(
         geofence?.polygon ? { type: 'Polygon', coordinates: geofence.polygon.coordinates } : null
     )
@@ -331,8 +292,6 @@ function GeofenceModal({ geofence, onClose, onSave, apiUrl }: GeofenceModalProps
                 ? `${apiUrl}/api/geofences/${geofence.id}`
                 : `${apiUrl}/api/geofences`
 
-            console.log('Creating geofence:', { url, name, polygon, alertOnEnter, alertOnExit, color })
-
             const response = await fetchWithAuth(url, {
                 method: geofence ? 'PUT' : 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -346,18 +305,15 @@ function GeofenceModal({ geofence, onClose, onSave, apiUrl }: GeofenceModalProps
                 }),
             })
 
-            console.log('Response status:', response.status)
-
             if (response.ok) {
-                console.log('Geofence created successfully')
                 onSave()
             } else {
                 const data = await response.json().catch(() => ({}))
-                console.error('Geofence creation failed:', data)
+                console.error('Geofence save failed:', data)
                 setError(data.detail || `Failed to save geofence (${response.status})`)
             }
         } catch (err) {
-            console.error('Geofence creation error:', err)
+            console.error('Geofence save error:', err)
             setError(`Error saving geofence: ${err instanceof Error ? err.message : String(err)}`)
         } finally {
             setSaving(false)
@@ -365,41 +321,45 @@ function GeofenceModal({ geofence, onClose, onSave, apiUrl }: GeofenceModalProps
     }
 
     return (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-3xl shadow-2xl max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-800 z-10">
-                    <h2 className="text-lg font-semibold text-slate-800 dark:text-white">
-                        {geofence ? 'Edit Geofence' : 'Create Geofence'}
+        <div className="fixed inset-0 bg-ink/30 z-50 flex items-center justify-center p-4">
+            <div className="bg-surface border border-line rounded w-full max-w-3xl shadow-[0_16px_48px_rgba(26,28,32,0.18)] max-h-[90vh] overflow-y-auto">
+                <div className="flex items-center justify-between px-5 h-14 border-b border-line sticky top-0 bg-surface z-10">
+                    <h2 className="text-sm font-semibold">
+                        {geofence ? 'Edit geofence' : 'New geofence'}
                     </h2>
-                    <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
-                        <X className="w-5 h-5 text-slate-500" />
+                    <button
+                        onClick={onClose}
+                        className="p-1.5 text-ink-secondary hover:text-ink hover:bg-sunken rounded transition-colors"
+                        title="Close"
+                    >
+                        <X className="w-4 h-4" />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                <form onSubmit={handleSubmit} className="p-5 space-y-4">
                     {error && (
-                        <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg text-sm">
+                        <div className="px-3 py-2 bg-crit-bg text-crit rounded text-sm">
                             {error}
                         </div>
                     )}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                            <label className="block text-xs font-medium text-ink-secondary mb-1.5">
                                 Name *
                             </label>
                             <input
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className="w-full px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-                                placeholder="e.g., Tokyo Station Area"
+                                className={inputClass}
+                                placeholder="e.g. Tokyo Station area"
                                 required
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                            <label className="block text-xs font-medium text-ink-secondary mb-1.5">
                                 Color
                             </label>
                             <div className="flex items-center gap-3">
@@ -407,21 +367,21 @@ function GeofenceModal({ geofence, onClose, onSave, apiUrl }: GeofenceModalProps
                                     type="color"
                                     value={color}
                                     onChange={(e) => setColor(e.target.value)}
-                                    className="w-10 h-10 rounded-lg cursor-pointer border-0"
+                                    className="w-9 h-9 rounded cursor-pointer border border-line-strong bg-surface p-0.5"
                                 />
-                                <span className="text-sm text-slate-500">{color}</span>
+                                <span className="num text-sm text-ink-secondary">{color}</span>
                             </div>
                         </div>
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                        <label className="block text-xs font-medium text-ink-secondary mb-1.5">
                             Description
                         </label>
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            className="w-full px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                            className={inputClass}
                             placeholder="Optional description"
                             rows={2}
                         />
@@ -429,27 +389,24 @@ function GeofenceModal({ geofence, onClose, onSave, apiUrl }: GeofenceModalProps
 
                     {/* Map Drawing Area */}
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                            Draw Geofence Area on Map *
+                        <label className="block text-xs font-medium text-ink-secondary mb-1.5">
+                            Area * — click the map to place points; click the first point again to close the polygon
                         </label>
-                        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg mb-2 flex items-center gap-2">
-                            <MousePointer className="w-4 h-4 text-blue-500" />
-                            <p className="text-sm text-blue-700 dark:text-blue-400">
-                                Click on the map to place points. Click the first point again to close the polygon.
-                            </p>
-                        </div>
                         <GeofenceMap
                             initialPolygon={polygon}
                             color={color}
                             onPolygonChange={setPolygon}
                         />
                         {polygon && (
-                            <div className="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
-                                ✓ Polygon with {polygon.coordinates[0].length - 1} points
+                            <div className="mt-2 text-sm text-ink-secondary flex items-center gap-3">
+                                <span>
+                                    Polygon with{' '}
+                                    <span className="num text-ink">{polygon.coordinates[0].length - 1}</span> points
+                                </span>
                                 <button
                                     type="button"
                                     onClick={() => setPolygon(null)}
-                                    className="text-red-500 hover:text-red-600 flex items-center gap-1"
+                                    className="text-crit hover:underline flex items-center gap-1 text-xs font-medium"
                                 >
                                     <Undo2 className="w-3 h-3" />
                                     Clear
@@ -459,44 +416,40 @@ function GeofenceModal({ geofence, onClose, onSave, apiUrl }: GeofenceModalProps
                     </div>
 
                     <div className="flex items-center gap-6">
-                        <label className="flex items-center gap-2 cursor-pointer">
+                        <label className="flex items-center gap-2 cursor-pointer text-sm text-ink-secondary">
                             <input
                                 type="checkbox"
                                 checked={alertOnEnter}
                                 onChange={(e) => setAlertOnEnter(e.target.checked)}
-                                className="w-4 h-4 rounded border-slate-300"
+                                className="w-4 h-4 rounded-sm border-line-strong accent-[var(--brand)]"
                             />
-                            <span className="text-sm text-slate-700 dark:text-slate-300">
-                                Alert on enter
-                            </span>
+                            Alert on enter
                         </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
+                        <label className="flex items-center gap-2 cursor-pointer text-sm text-ink-secondary">
                             <input
                                 type="checkbox"
                                 checked={alertOnExit}
                                 onChange={(e) => setAlertOnExit(e.target.checked)}
-                                className="w-4 h-4 rounded border-slate-300"
+                                className="w-4 h-4 rounded-sm border-line-strong accent-[var(--brand)]"
                             />
-                            <span className="text-sm text-slate-700 dark:text-slate-300">
-                                Alert on exit
-                            </span>
+                            Alert on exit
                         </label>
                     </div>
 
-                    <div className="flex gap-3 pt-4">
+                    <div className="flex gap-3 pt-2">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 px-4 py-2 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                            className="flex-1 px-4 py-2 border border-line-strong text-ink-secondary hover:text-ink hover:bg-sunken rounded text-sm font-medium transition-colors"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={saving || !name || !polygon}
-                            className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                            className="flex-1 px-4 py-2 bg-brand hover:bg-brand-hover text-white rounded text-sm font-medium transition-colors disabled:opacity-50"
                         >
-                            {saving ? 'Saving...' : (geofence ? 'Update' : 'Create')}
+                            {saving ? 'Saving…' : (geofence ? 'Update' : 'Create')}
                         </button>
                     </div>
                 </form>

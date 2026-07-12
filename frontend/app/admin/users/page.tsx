@@ -1,13 +1,10 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import Link from 'next/link'
-import {
-    ArrowLeft, Users, Shield, User as UserIcon,
-    Check, X, AlertTriangle, MoreVertical
-} from 'lucide-react'
+import { X, MoreVertical } from 'lucide-react'
 import { fetchWithAuth, getCurrentUser, User } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
+import { PageHeader } from '@/components/PageHeader'
 
 interface UserListItem {
     id: number
@@ -28,24 +25,6 @@ export default function AdminUsersPage() {
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-    // Check if current user is admin
-    useEffect(() => {
-        async function checkAdmin() {
-            const user = await getCurrentUser()
-            if (!user) {
-                router.push('/auth/login')
-                return
-            }
-            setCurrentUser(user)
-            if (user.role !== 'admin') {
-                router.push('/dashboard')
-                return
-            }
-            loadUsers()
-        }
-        checkAdmin()
-    }, [router])
-
     const loadUsers = useCallback(async () => {
         try {
             const response = await fetchWithAuth(`${apiUrl}/api/users`)
@@ -63,6 +42,24 @@ export default function AdminUsersPage() {
             setLoading(false)
         }
     }, [apiUrl])
+
+    // Check if current user is admin
+    useEffect(() => {
+        async function checkAdmin() {
+            const user = await getCurrentUser()
+            if (!user) {
+                router.push('/auth/login')
+                return
+            }
+            setCurrentUser(user)
+            if (user.role !== 'admin') {
+                router.push('/dashboard')
+                return
+            }
+            loadUsers()
+        }
+        checkAdmin()
+    }, [router, loadUsers])
 
     const updateUserRole = async (userId: number, newRole: string) => {
         try {
@@ -103,99 +100,62 @@ export default function AdminUsersPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500" />
+            <div className="min-h-screen bg-paper flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-line-strong border-t-brand" />
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-slate-100 dark:bg-slate-900">
-            {/* Header */}
-            <header className="bg-white dark:bg-slate-800 shadow-sm sticky top-0 z-40">
-                <div className="container mx-auto px-6 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <Link
-                                href="/dashboard"
-                                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                            >
-                                <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-                            </Link>
-                            <div className="flex items-center gap-2">
-                                <Users className="w-6 h-6 text-purple-500" />
-                                <h1 className="text-xl font-bold text-slate-800 dark:text-white">
-                                    User Management
-                                </h1>
-                                <span className="px-2 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded-full">
-                                    Admin
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </header>
+        <div className="min-h-screen bg-paper">
+            <PageHeader title="User management" backHref="/dashboard" />
 
-            <main className="container mx-auto px-6 py-8">
+            <main className="container mx-auto px-6 py-6">
                 {error && (
-                    <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-400 flex items-center gap-2">
-                        <AlertTriangle className="w-5 h-5" />
+                    <div className="mb-6 px-4 py-3 bg-crit-bg text-crit rounded text-sm flex items-center gap-2">
                         {error}
-                        <button onClick={() => setError(null)} className="ml-auto">
+                        <button onClick={() => setError(null)} className="ml-auto" title="Dismiss">
                             <X className="w-4 h-4" />
                         </button>
                     </div>
                 )}
 
-                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm overflow-hidden">
-                    <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-                        <h2 className="font-semibold text-slate-800 dark:text-white">
-                            All Users ({users.length})
-                        </h2>
+                <div className="bg-surface border border-line rounded overflow-visible">
+                    <div className="px-5 py-3 border-b border-line flex items-baseline justify-between">
+                        <h2 className="text-sm font-semibold">All users</h2>
+                        <span className="num text-xs text-ink-muted">{users.length}</span>
                     </div>
 
-                    <div className="divide-y divide-slate-100 dark:divide-slate-700">
+                    <div className="divide-y divide-line">
                         {users.map((user) => (
                             <div
                                 key={user.id}
-                                className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                                className="px-5 py-3 flex items-center justify-between hover:bg-sunken transition-colors"
                             >
-                                <div className="flex items-center gap-4">
-                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${user.role === 'admin'
-                                            ? 'bg-purple-100 dark:bg-purple-900/30'
-                                            : 'bg-slate-100 dark:bg-slate-700'
-                                        }`}>
-                                        {user.role === 'admin' ? (
-                                            <Shield className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                                        ) : (
-                                            <UserIcon className="w-5 h-5 text-slate-500" />
+                                <div className="min-w-0">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-medium truncate">
+                                            {user.full_name || user.email}
+                                        </span>
+                                        {user.id === currentUser?.id && (
+                                            <span className="text-xs text-ink-muted">(you)</span>
                                         )}
                                     </div>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-medium text-slate-800 dark:text-white">
-                                                {user.full_name || user.email}
-                                            </span>
-                                            {user.id === currentUser?.id && (
-                                                <span className="text-xs text-slate-500">(you)</span>
-                                            )}
-                                        </div>
-                                        <div className="text-sm text-slate-500">
-                                            {user.email}
-                                        </div>
+                                    <div className="text-xs text-ink-secondary truncate">
+                                        {user.email}
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-3">
-                                    <span className={`px-2 py-1 text-xs font-medium rounded-lg ${user.role === 'admin'
-                                            ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
-                                            : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <span className={`px-1.5 py-0.5 text-xs font-medium rounded-sm ${user.role === 'admin'
+                                        ? 'bg-brand text-white'
+                                        : 'bg-sunken text-ink-secondary'
                                         }`}>
                                         {user.role}
                                     </span>
-                                    <span className={`px-2 py-1 text-xs font-medium rounded-lg ${user.is_active
-                                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                    <span className={`px-1.5 py-0.5 text-xs font-medium rounded-sm ${user.is_active
+                                        ? 'bg-ok-bg text-ok'
+                                        : 'bg-crit-bg text-crit'
                                         }`}>
                                         {user.is_active ? 'Active' : 'Inactive'}
                                     </span>
@@ -204,9 +164,10 @@ export default function AdminUsersPage() {
                                         <div className="relative">
                                             <button
                                                 onClick={() => setActionMenuOpen(actionMenuOpen === user.id ? null : user.id)}
-                                                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
+                                                className="p-1.5 text-ink-secondary hover:text-ink hover:bg-sunken rounded transition-colors"
+                                                title="Actions"
                                             >
-                                                <MoreVertical className="w-4 h-4 text-slate-500" />
+                                                <MoreVertical className="w-4 h-4" />
                                             </button>
 
                                             {actionMenuOpen === user.id && (
@@ -215,36 +176,36 @@ export default function AdminUsersPage() {
                                                         className="fixed inset-0 z-40"
                                                         onClick={() => setActionMenuOpen(null)}
                                                     />
-                                                    <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 z-50 py-1">
+                                                    <div className="absolute right-0 top-full mt-1 w-44 bg-surface rounded border border-line shadow-[0_8px_24px_rgba(26,28,32,0.12)] z-50 py-1">
                                                         {user.role === 'user' ? (
                                                             <button
                                                                 onClick={() => updateUserRole(user.id, 'admin')}
-                                                                className="w-full px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                                                                className="w-full px-3 py-1.5 text-left text-sm text-ink-secondary hover:text-ink hover:bg-sunken transition-colors"
                                                             >
-                                                                Make Admin
+                                                                Make admin
                                                             </button>
                                                         ) : (
                                                             <button
                                                                 onClick={() => updateUserRole(user.id, 'user')}
-                                                                className="w-full px-4 py-2 text-left text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                                                                className="w-full px-3 py-1.5 text-left text-sm text-ink-secondary hover:text-ink hover:bg-sunken transition-colors"
                                                             >
-                                                                Remove Admin
+                                                                Remove admin
                                                             </button>
                                                         )}
-                                                        <hr className="my-1 border-slate-200 dark:border-slate-700" />
+                                                        <hr className="my-1 border-line" />
                                                         {user.is_active ? (
                                                             <button
                                                                 onClick={() => toggleUserActive(user.id, false)}
-                                                                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                                className="w-full px-3 py-1.5 text-left text-sm text-crit hover:bg-crit-bg transition-colors"
                                                             >
-                                                                Deactivate User
+                                                                Deactivate user
                                                             </button>
                                                         ) : (
                                                             <button
                                                                 onClick={() => toggleUserActive(user.id, true)}
-                                                                className="w-full px-4 py-2 text-left text-sm text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
+                                                                className="w-full px-3 py-1.5 text-left text-sm text-ok hover:bg-ok-bg transition-colors"
                                                             >
-                                                                Activate User
+                                                                Activate user
                                                             </button>
                                                         )}
                                                     </div>

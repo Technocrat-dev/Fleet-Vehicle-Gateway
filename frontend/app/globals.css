@@ -2,37 +2,54 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
+/*
+ * Design tokens — light "operations console".
+ * Solid surfaces, hairline borders, one restrained accent.
+ * Green/amber/red are reserved for vehicle status semantics.
+ */
 :root {
-  --bg-deep: #0a0e1a;
-  --bg-surface: #111627;
-  --bg-elevated: #1a1f35;
-  --bg-hover: #222845;
-  --border: rgba(255, 255, 255, 0.06);
-  --border-accent: rgba(6, 214, 160, 0.2);
-  --text-primary: #e8eaf0;
-  --text-secondary: #6b7194;
-  --text-muted: #464b6b;
-  --accent: #06d6a0;
-  --accent-dim: #059f78;
-  --accent-warm: #f4a261;
-  --danger: #e63946;
-  --success: #2ec475;
+  --paper: #f4f4f1;
+  --surface: #ffffff;
+  --sunken: #ededea;
+  --ink: #1a1c20;
+  --ink-secondary: #565b64;
+  --ink-muted: #82878f;
+  --line: #e2e2dd;
+  --line-strong: #cfcfc8;
+  --brand: #22314e;
+  --brand-hover: #2e4166;
+  --signal: #d9480f;
+  --ok: #1a7f4b;
+  --ok-bg: #e9f4ee;
+  --warn: #b45309;
+  --warn-bg: #faf0e2;
+  --crit: #b91c1c;
+  --crit-bg: #faeceb;
 }
 
 body {
-  color: var(--text-primary);
-  background: var(--bg-deep);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: var(--font-sans), -apple-system, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom scrollbar */
+::selection {
+  background: var(--brand);
+  color: #ffffff;
+}
+
+/* Keyboard focus */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
+/* Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -40,68 +57,47 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--text-muted);
-  border-radius: 3px;
+  background: var(--line-strong);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary);
+  background: var(--ink-muted);
 }
 
-/* Glass card base */
-.glass {
-  background: rgba(17, 22, 39, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border);
-}
-
-.glass-light {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border);
-}
-
-.glass-accent {
-  background: rgba(6, 214, 160, 0.04);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border-accent);
-}
-
-/* Card hover */
-.card-hover {
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.card-hover:hover {
-  transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-}
-
-/* Glow effects */
-.glow-teal {
-  box-shadow: 0 0 20px rgba(6, 214, 160, 0.15), 0 0 60px rgba(6, 214, 160, 0.05);
-}
-
-.glow-amber {
-  box-shadow: 0 0 20px rgba(244, 162, 97, 0.15), 0 0 60px rgba(244, 162, 97, 0.05);
-}
-
-/* Stats number */
-.stat-number {
+/* Numeric data */
+.num {
+  font-family: var(--font-mono), ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
 }
 
-/* Leaflet map styles */
+/* Live indicator — the one animation we keep; it signals real state */
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ok);
+  animation: live 2.4s ease-in-out infinite;
+}
+
+.live-dot.down {
+  background: var(--crit);
+  animation: none;
+}
+
+@keyframes live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* Leaflet */
 .leaflet-container {
   height: 100%;
   width: 100%;
-  border-radius: 0.75rem;
+  border-radius: 5px;
   z-index: 0 !important;
+  font-family: var(--font-sans), sans-serif;
+  background: var(--sunken);
 }
 
 .leaflet-pane,
@@ -113,67 +109,14 @@ body {
   z-index: 2 !important;
 }
 
-/* Vehicle marker pulse */
-.vehicle-marker {
-  animation: pulse 2s infinite;
+.leaflet-popup-content-wrapper {
+  border-radius: 5px;
+  border: 1px solid var(--line);
+  box-shadow: 0 4px 16px rgba(26, 28, 32, 0.12);
+  color: var(--ink);
 }
 
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 0.8;
-  }
-}
-
-/* Connection status */
-.connection-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  animation: blink 1.5s infinite;
-}
-
-.connection-dot.connected {
-  background-color: var(--success);
-}
-
-.connection-dot.disconnected {
-  background-color: var(--danger);
-  animation: none;
-}
-
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
-
-/* Gradient text utility */
-.text-gradient {
-  background: linear-gradient(135deg, var(--accent), var(--accent-warm));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Subtle grid pattern for hero backgrounds */
-.bg-grid {
-  background-image:
-    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-  background-size: 60px 60px;
-}
-
-/* Noise texture overlay */
-.noise::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  opacity: 0.015;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  pointer-events: none;
-  border-radius: inherit;
+.leaflet-popup-content {
+  margin: 12px 14px;
+  line-height: 1.5;
 }

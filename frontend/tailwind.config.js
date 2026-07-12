@@ -7,41 +7,42 @@ module.exports = {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+                sans: ['var(--font-sans)', '-apple-system', 'sans-serif'],
+                mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
             },
             colors: {
-                surface: {
-                    deep: '#0a0e1a',
-                    DEFAULT: '#111627',
-                    elevated: '#1a1f35',
-                    hover: '#222845',
+                paper: 'var(--paper)',
+                surface: 'var(--surface)',
+                sunken: 'var(--sunken)',
+                ink: {
+                    DEFAULT: 'var(--ink)',
+                    secondary: 'var(--ink-secondary)',
+                    muted: 'var(--ink-muted)',
                 },
-                accent: {
-                    DEFAULT: '#06d6a0',
-                    dim: '#059f78',
-                    warm: '#f4a261',
+                line: {
+                    DEFAULT: 'var(--line)',
+                    strong: 'var(--line-strong)',
                 },
-                muted: '#6b7194',
-                danger: '#e63946',
-                success: '#2ec475',
+                brand: {
+                    DEFAULT: 'var(--brand)',
+                    hover: 'var(--brand-hover)',
+                },
+                signal: 'var(--signal)',
+                ok: {
+                    DEFAULT: 'var(--ok)',
+                    bg: 'var(--ok-bg)',
+                },
+                warn: {
+                    DEFAULT: 'var(--warn)',
+                    bg: 'var(--warn-bg)',
+                },
+                crit: {
+                    DEFAULT: 'var(--crit)',
+                    bg: 'var(--crit-bg)',
+                },
             },
-            borderColor: {
-                subtle: 'rgba(255, 255, 255, 0.06)',
-            },
-            animation: {
-                'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                'fade-in': 'fadeIn 0.4s ease-out',
-                'slide-up': 'slideUp 0.4s ease-out',
-            },
-            keyframes: {
-                fadeIn: {
-                    '0%': { opacity: '0' },
-                    '100%': { opacity: '1' },
-                },
-                slideUp: {
-                    '0%': { opacity: '0', transform: 'translateY(12px)' },
-                    '100%': { opacity: '1', transform: 'translateY(0)' },
-                },
+            borderRadius: {
+                DEFAULT: '5px',
             },
         },
     },

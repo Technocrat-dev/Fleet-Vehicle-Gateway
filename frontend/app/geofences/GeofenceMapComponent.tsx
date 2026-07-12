@@ -1,18 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { MapContainer, TileLayer, Polygon, CircleMarker, useMapEvents, useMap } from 'react-leaflet'
-import L from 'leaflet'
-
-// Fix Leaflet default icon issue
-try {
-    delete (L.Icon.Default.prototype as any)._getIconUrl
-    L.Icon.Default.mergeOptions({
-        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-    })
-} catch (e) { }
+import { useEffect, useState } from 'react'
+import { MapContainer, TileLayer, Polygon, CircleMarker, useMapEvents } from 'react-leaflet'
 
 interface GeoJSONPolygon {
     type: 'Polygon'
@@ -25,20 +14,19 @@ interface GeofenceMapProps {
     onPolygonChange: (polygon: GeoJSONPolygon | null) => void
 }
 
-// Component to handle map click events for polygon drawing
+// First drawing point gets the "close here" affordance color
+const START_POINT_COLOR = '#1a7f4b'
+
+// Handle map click events for polygon drawing
 function PolygonDrawer({
     points,
     setPoints,
-    color,
     onComplete
 }: {
     points: [number, number][]
     setPoints: (points: [number, number][]) => void
-    color: string
     onComplete: (polygon: GeoJSONPolygon) => void
 }) {
-    const map = useMap()
-
     useMapEvents({
         click: (e) => {
             const { lat, lng } = e.latlng
@@ -74,25 +62,6 @@ function PolygonDrawer({
     return null
 }
 
-// Component to show click point markers
-function PointMarkers({ points, color }: { points: [number, number][], color: string }) {
-    return (
-        <>
-            {points.map((point, index) => (
-                <div
-                    key={index}
-                    style={{
-                        position: 'absolute',
-                        left: 0,
-                        top: 0,
-                        pointerEvents: 'none'
-                    }}
-                />
-            ))}
-        </>
-    )
-}
-
 export default function GeofenceMapComponent({
     initialPolygon,
     color,
@@ -119,11 +88,6 @@ export default function GeofenceMapComponent({
         return completedPolygon.coordinates[0].map(([lng, lat]) => [lat, lng] as [number, number])
     }
 
-    // Get positions for the in-progress polygon
-    const getDrawingPositions = (): [number, number][] => {
-        return points
-    }
-
     // Reset drawing when initialPolygon changes
     useEffect(() => {
         if (initialPolygon) {
@@ -138,8 +102,14 @@ export default function GeofenceMapComponent({
         }
     }, [completedPolygon])
 
+    const instruction =
+        completedPolygon ? null :
+            points.length === 0 ? 'Click on the map to start drawing your geofence' :
+                points.length < 3 ? `Add ${3 - points.length} more point${3 - points.length > 1 ? 's' : ''} to form a polygon` :
+                    'Click near the green starting point to complete the polygon'
+
     return (
-        <div className="h-[350px] rounded-xl overflow-hidden border-2 border-dashed border-slate-300 dark:border-slate-600 relative">
+        <div className="h-[350px] rounded overflow-hidden border border-line relative">
             <MapContainer
                 center={defaultCenter}
                 zoom={13}
@@ -147,8 +117,8 @@ export default function GeofenceMapComponent({
                 scrollWheelZoom={true}
             >
                 <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                    url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
                 />
 
                 {/* Polygon drawing handler */}
@@ -156,7 +126,6 @@ export default function GeofenceMapComponent({
                     <PolygonDrawer
                         points={points}
                         setPoints={setPoints}
-                        color={color}
                         onComplete={handleComplete}
                     />
                 )}
@@ -164,12 +133,12 @@ export default function GeofenceMapComponent({
                 {/* Show in-progress polygon while drawing */}
                 {points.length >= 2 && (
                     <Polygon
-                        positions={getDrawingPositions()}
+                        positions={points}
                         pathOptions={{
                             color: color,
                             fillColor: color,
-                            fillOpacity: 0.3,
-                            weight: 2,
+                            fillOpacity: 0.15,
+                            weight: 1.5,
                             dashArray: '5, 5',
                         }}
                     />
@@ -182,8 +151,8 @@ export default function GeofenceMapComponent({
                         pathOptions={{
                             color: color,
                             fillColor: color,
-                            fillOpacity: 0.3,
-                            weight: 2,
+                            fillOpacity: 0.15,
+                            weight: 1.5,
                         }}
                     />
                 )}
@@ -193,10 +162,10 @@ export default function GeofenceMapComponent({
                     <CircleMarker
                         key={index}
                         center={point}
-                        radius={index === 0 ? 8 : 5}
+                        radius={index === 0 ? 7 : 4}
                         pathOptions={{
-                            color: index === 0 ? '#22c55e' : color,
-                            fillColor: index === 0 ? '#22c55e' : color,
+                            color: index === 0 ? START_POINT_COLOR : color,
+                            fillColor: index === 0 ? START_POINT_COLOR : color,
                             fillOpacity: 1,
                             weight: 2,
                         }}
@@ -205,19 +174,9 @@ export default function GeofenceMapComponent({
             </MapContainer>
 
             {/* Instructions overlay */}
-            {!completedPolygon && points.length === 0 && (
-                <div className="absolute bottom-4 left-4 right-4 bg-black/70 text-white px-4 py-2 rounded-lg text-sm text-center">
-                    Click on the map to start drawing your geofence
-                </div>
-            )}
-            {!completedPolygon && points.length > 0 && points.length < 3 && (
-                <div className="absolute bottom-4 left-4 right-4 bg-black/70 text-white px-4 py-2 rounded-lg text-sm text-center">
-                    Add {3 - points.length} more point{3 - points.length > 1 ? 's' : ''} to create a polygon
-                </div>
-            )}
-            {!completedPolygon && points.length >= 3 && (
-                <div className="absolute bottom-4 left-4 right-4 bg-green-600/90 text-white px-4 py-2 rounded-lg text-sm text-center">
-                    Click near the <span className="font-bold text-green-200">green starting point</span> to complete the polygon
+            {instruction && (
+                <div className="absolute bottom-3 left-3 right-3 bg-surface border border-line rounded px-3 py-2 text-xs text-ink-secondary text-center shadow-[0_2px_8px_rgba(26,28,32,0.1)] z-[1000] pointer-events-none">
+                    {instruction}
                 </div>
             )}
         </div>

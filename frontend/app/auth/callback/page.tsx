@@ -3,72 +3,75 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+function CallbackShell({ children }: { children: React.ReactNode }) {
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-paper px-4">
+            <div className="bg-surface border border-line rounded p-8 text-center w-full max-w-sm">
+                {children}
+            </div>
+        </div>
+    );
+}
+
+function Spinner() {
+    return (
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-line-strong border-t-brand mx-auto mb-4" />
+    );
+}
+
 function OAuthCallbackContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [error, setError] = useState('');
 
     useEffect(() => {
-        const handleCallback = async () => {
-            // Get tokens from URL parameters
-            const accessToken = searchParams.get('access_token');
-            const refreshToken = searchParams.get('refresh_token');
-            const errorParam = searchParams.get('error');
+        const accessToken = searchParams.get('access_token');
+        const refreshToken = searchParams.get('refresh_token');
+        const errorParam = searchParams.get('error');
 
-            if (errorParam) {
-                setError('Authentication failed. Please try again.');
-                setTimeout(() => router.push('/auth/login'), 3000);
-                return;
-            }
+        if (errorParam) {
+            setError('Authentication failed. Please try again.');
+            setTimeout(() => router.push('/auth/login'), 3000);
+            return;
+        }
 
-            if (!accessToken || !refreshToken) {
-                setError('Authentication completed but tokens not received.');
-                setTimeout(() => router.push('/auth/login'), 3000);
-                return;
-            }
+        if (!accessToken || !refreshToken) {
+            setError('Authentication completed but tokens not received.');
+            setTimeout(() => router.push('/auth/login'), 3000);
+            return;
+        }
 
-            // Store tokens in localStorage
-            localStorage.setItem('access_token', accessToken);
-            localStorage.setItem('refresh_token', refreshToken);
-
-            // Redirect to dashboard
-            router.push('/dashboard');
-        };
-
-        handleCallback();
+        localStorage.setItem('access_token', accessToken);
+        localStorage.setItem('refresh_token', refreshToken);
+        router.push('/dashboard');
     }, [searchParams, router]);
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-            <div className="bg-white p-8 rounded-lg shadow-xl text-center max-w-md">
-                {error ? (
-                    <div>
-                        <div className="text-6xl mb-4">❌</div>
-                        <h2 className="text-xl font-semibold text-red-600 mb-2">Authentication Error</h2>
-                        <p className="text-gray-600">{error}</p>
-                        <p className="text-sm text-gray-500 mt-4">Redirecting to login...</p>
-                    </div>
-                ) : (
-                    <div>
-                        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-                        <h2 className="text-xl font-semibold text-gray-800 mb-2">Completing Authentication</h2>
-                        <p className="text-gray-600">You'll be redirected to the dashboard in a moment...</p>
-                    </div>
-                )}
-            </div>
-        </div>
+        <CallbackShell>
+            {error ? (
+                <div>
+                    <h2 className="text-base font-semibold text-crit mb-1">Authentication error</h2>
+                    <p className="text-sm text-ink-secondary">{error}</p>
+                    <p className="text-xs text-ink-muted mt-3">Redirecting to login…</p>
+                </div>
+            ) : (
+                <div>
+                    <Spinner />
+                    <h2 className="text-base font-semibold mb-1">Completing authentication</h2>
+                    <p className="text-sm text-ink-secondary">You&apos;ll be redirected in a moment…</p>
+                </div>
+            )}
+        </CallbackShell>
     );
 }
 
 export default function OAuthCallbackPage() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-                <div className="bg-white p-8 rounded-lg shadow-xl text-center max-w-md">
-                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-                    <h2 className="text-xl font-semibold text-gray-800 mb-2">Loading...</h2>
-                </div>
-            </div>
+            <CallbackShell>
+                <Spinner />
+                <h2 className="text-base font-semibold">Loading…</h2>
+            </CallbackShell>
         }>
             <OAuthCallbackContent />
         </Suspense>

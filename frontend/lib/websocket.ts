@@ -67,6 +67,7 @@ export function useFleetWebSocket(wsUrl: string): UseWebSocketReturn {
 
     const wsRef = useRef<WebSocket | null>(null)
     const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+    const closedByCleanupRef = useRef(false)
 
     const connect = useCallback(() => {
         try {
@@ -74,7 +75,7 @@ export function useFleetWebSocket(wsUrl: string): UseWebSocketReturn {
             wsRef.current = ws
 
             ws.onopen = () => {
-                console.log('🔌 WebSocket connected')
+                console.log('WebSocket connected')
                 setIsConnected(true)
                 setError(null)
             }
@@ -128,14 +129,16 @@ export function useFleetWebSocket(wsUrl: string): UseWebSocketReturn {
             }
 
             ws.onclose = () => {
-                console.log('🔌 WebSocket disconnected')
+                console.log('WebSocket disconnected')
                 setIsConnected(false)
 
-                // Reconnect after 3 seconds
-                reconnectTimeoutRef.current = setTimeout(() => {
-                    console.log('Attempting to reconnect...')
-                    connect()
-                }, 3000)
+                // Reconnect after 3 seconds — unless the component unmounted
+                if (!closedByCleanupRef.current) {
+                    reconnectTimeoutRef.current = setTimeout(() => {
+                        console.log('Attempting to reconnect...')
+                        connect()
+                    }, 3000)
+                }
             }
 
         } catch (e) {
@@ -144,6 +147,7 @@ export function useFleetWebSocket(wsUrl: string): UseWebSocketReturn {
     }, [wsUrl])
 
     useEffect(() => {
+        closedByCleanupRef.current = false
         connect()
 
         // Ping every 25 seconds to keep connection alive
@@ -154,6 +158,7 @@ export function useFleetWebSocket(wsUrl: string): UseWebSocketReturn {
         }, 25000)
 
         return () => {
+            closedByCleanupRef.current = true
             clearInterval(pingInterval)
             if (reconnectTimeoutRef.current) {
                 clearTimeout(reconnectTimeoutRef.current)
