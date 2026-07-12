@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { LogOut, MapPin, Shield } from 'lucide-react'
-import { useFleetWebSocket, VehicleStatus } from '@/lib/websocket'
+import { useFleetWebSocket, VehicleStatus, FleetSummary } from '@/lib/websocket'
 import { logout, getCurrentUser, User } from '@/lib/auth'
 import { MetricStrip } from '@/components/MetricStrip'
 import { VehicleTable } from '@/components/VehicleTable'
@@ -21,6 +21,55 @@ const FleetMap = dynamic(() => import('@/components/FleetMap'), {
         </div>
     )
 })
+
+// Live wall clock — ops consoles keep the time in view
+function Clock() {
+    const [now, setNow] = useState<Date | null>(null)
+
+    useEffect(() => {
+        setNow(new Date())
+        const id = setInterval(() => setNow(new Date()), 1000)
+        return () => clearInterval(id)
+    }, [])
+
+    if (!now) return null
+
+    return (
+        <span className="num text-xs text-ink-secondary tabular-nums hidden sm:inline">
+            {now.toLocaleTimeString('en-GB')}
+        </span>
+    )
+}
+
+const SPARK_SAMPLES = 40
+const SPARK_INTERVAL_MS = 2000
+
+// Sample the fleet summary on an interval to feed the metric sparklines
+function useSparkHistory(summary: FleetSummary | null) {
+    const summaryRef = useRef(summary)
+    summaryRef.current = summary
+
+    const [history, setHistory] = useState<{ passengers: number[]; latency: number[]; active: number[] }>({
+        passengers: [],
+        latency: [],
+        active: [],
+    })
+
+    useEffect(() => {
+        const id = setInterval(() => {
+            const s = summaryRef.current
+            if (!s) return
+            setHistory(h => ({
+                passengers: [...h.passengers, s.total_passengers].slice(-SPARK_SAMPLES),
+                latency: [...h.latency, s.average_latency_ms].slice(-SPARK_SAMPLES),
+                active: [...h.active, s.active_vehicles].slice(-SPARK_SAMPLES),
+            }))
+        }, SPARK_INTERVAL_MS)
+        return () => clearInterval(id)
+    }, [])
+
+    return history
+}
 
 function Panel({ title, aside, children }: {
     title: string
@@ -48,6 +97,7 @@ export default function DashboardPage() {
         getCurrentUser().then(setCurrentUser)
     }, [])
 
+    const history = useSparkHistory(summary)
     const vehicleArray = Array.from(vehicles.values())
 
     return (
@@ -78,6 +128,8 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="flex items-center gap-4">
+                        <Clock />
+
                         <div className="flex items-center gap-2 text-xs">
                             <span className={`live-dot ${isConnected ? '' : 'down'}`} />
                             <span className={isConnected ? 'text-ink-secondary' : 'text-crit font-medium'}>
@@ -110,16 +162,19 @@ export default function DashboardPage() {
                             label: 'Vehicles',
                             value: summary?.total_vehicles || 0,
                             detail: summary?.active_vehicles ? `${summary.active_vehicles} active` : undefined,
+                            spark: history.active,
                         },
                         {
                             label: 'Passengers',
                             value: summary?.total_passengers || 0,
                             detail: `avg ${(summary?.average_occupancy || 0).toFixed(1)} per vehicle`,
+                            spark: history.passengers,
                         },
                         {
                             label: 'Avg latency',
                             value: `${(summary?.average_latency_ms || 0).toFixed(1)} ms`,
                             detail: 'edge inference',
+                            spark: history.latency,
                         },
                         {
                             label: 'Consent',

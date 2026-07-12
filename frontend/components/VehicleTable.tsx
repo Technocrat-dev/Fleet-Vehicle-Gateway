@@ -1,12 +1,17 @@
 'use client'
 
+import { useState } from 'react'
+import { ChevronUp, ChevronDown } from 'lucide-react'
 import { VehicleStatus } from '@/lib/websocket'
 import { VEHICLE_CAPACITY, occupancyLevel } from '@/lib/constants'
+import { TickValue } from '@/components/TickValue'
 
 interface VehicleTableProps {
     vehicles: VehicleStatus[]
     onSelect?: (vehicle: VehicleStatus) => void
 }
+
+type SortKey = 'vehicle_id' | 'occupancy_count' | 'inference_latency_ms' | 'speed_kmh' | 'safety_score'
 
 const levelText = {
     ok: 'text-ok',
@@ -20,7 +25,49 @@ const levelBar = {
     crit: 'bg-crit',
 } as const
 
+function compare(a: VehicleStatus, b: VehicleStatus, key: SortKey): number {
+    if (key === 'vehicle_id') {
+        return a.vehicle_id.localeCompare(b.vehicle_id, undefined, { numeric: true })
+    }
+    return (a[key] ?? -Infinity) - (b[key] ?? -Infinity)
+}
+
+function SortHeader({
+    label,
+    sortKey,
+    active,
+    dir,
+    onSort,
+    align = 'left',
+}: {
+    label: string
+    sortKey: SortKey
+    active: boolean
+    dir: 1 | -1
+    onSort: (key: SortKey) => void
+    align?: 'left' | 'right'
+}) {
+    return (
+        <th className={`font-medium py-2 pr-4 ${align === 'right' ? 'text-right' : 'text-left'}`}>
+            <button
+                onClick={() => onSort(sortKey)}
+                className={`inline-flex items-center gap-0.5 hover:text-ink transition-colors ${active ? 'text-ink' : ''}`}
+            >
+                {label}
+                <span className="w-3">
+                    {active && (dir === 1
+                        ? <ChevronUp className="w-3 h-3" />
+                        : <ChevronDown className="w-3 h-3" />)}
+                </span>
+            </button>
+        </th>
+    )
+}
+
 export function VehicleTable({ vehicles, onSelect }: VehicleTableProps) {
+    const [sortKey, setSortKey] = useState<SortKey>('vehicle_id')
+    const [dir, setDir] = useState<1 | -1>(1)
+
     if (vehicles.length === 0) {
         return (
             <div className="text-center py-12 text-sm text-ink-muted">
@@ -29,22 +76,30 @@ export function VehicleTable({ vehicles, onSelect }: VehicleTableProps) {
         )
     }
 
-    const sorted = [...vehicles].sort((a, b) =>
-        a.vehicle_id.localeCompare(b.vehicle_id, undefined, { numeric: true })
-    )
+    const handleSort = (key: SortKey) => {
+        if (key === sortKey) {
+            setDir(d => (d === 1 ? -1 : 1))
+        } else {
+            setSortKey(key)
+            // Metrics start descending (largest first), ids ascending
+            setDir(key === 'vehicle_id' ? 1 : -1)
+        }
+    }
+
+    const sorted = [...vehicles].sort((a, b) => dir * compare(a, b, sortKey))
 
     return (
         <div className="overflow-x-auto">
             <table className="w-full text-sm">
                 <thead>
-                    <tr className="border-b border-line text-left text-xs text-ink-secondary">
-                        <th className="font-medium py-2 pr-4">Vehicle</th>
-                        <th className="font-medium py-2 pr-4">Status</th>
-                        <th className="font-medium py-2 pr-4">Occupancy</th>
-                        <th className="font-medium py-2 pr-4 text-right">Latency</th>
-                        <th className="font-medium py-2 pr-4 text-right">Speed</th>
-                        <th className="font-medium py-2 pr-4 text-right">Safety</th>
-                        <th className="font-medium py-2">Consent</th>
+                    <tr className="border-b border-line text-xs text-ink-secondary">
+                        <SortHeader label="Vehicle" sortKey="vehicle_id" active={sortKey === 'vehicle_id'} dir={dir} onSort={handleSort} />
+                        <th className="font-medium py-2 pr-4 text-left">Status</th>
+                        <SortHeader label="Occupancy" sortKey="occupancy_count" active={sortKey === 'occupancy_count'} dir={dir} onSort={handleSort} />
+                        <SortHeader label="Latency" sortKey="inference_latency_ms" active={sortKey === 'inference_latency_ms'} dir={dir} onSort={handleSort} align="right" />
+                        <SortHeader label="Speed" sortKey="speed_kmh" active={sortKey === 'speed_kmh'} dir={dir} onSort={handleSort} align="right" />
+                        <SortHeader label="Safety" sortKey="safety_score" active={sortKey === 'safety_score'} dir={dir} onSort={handleSort} align="right" />
+                        <th className="font-medium py-2 text-left">Consent</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
@@ -87,9 +142,10 @@ function VehicleRow({
             </td>
             <td className="py-2.5 pr-4">
                 <div className="flex items-center gap-2.5">
-                    <span className={`num font-medium w-8 ${levelText[level]}`}>
-                        {vehicle.occupancy_count}/{VEHICLE_CAPACITY}
-                    </span>
+                    <TickValue
+                        value={`${vehicle.occupancy_count}/${VEHICLE_CAPACITY}`}
+                        className={`num font-medium w-8 inline-block ${levelText[level]}`}
+                    />
                     <div className="w-16 h-1 bg-sunken rounded-full overflow-hidden shrink-0">
                         <div
                             className={`h-full ${levelBar[level]} transition-[width] duration-500`}

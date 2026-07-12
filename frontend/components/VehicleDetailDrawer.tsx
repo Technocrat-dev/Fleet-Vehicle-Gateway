@@ -46,11 +46,11 @@ export function VehicleDetailDrawer({ vehicle, onClose }: VehicleDetailDrawerPro
     return (
         <>
             <div
-                className="fixed inset-0 bg-ink/30 z-40"
+                className="fixed inset-0 bg-ink/30 z-40 animate-fade-in"
                 onClick={onClose}
             />
 
-            <div className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-surface border-l border-line z-50 overflow-y-auto">
+            <div className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-surface border-l border-line z-50 overflow-y-auto animate-slide-in-right">
                 {/* Header */}
                 <div className="sticky top-0 bg-surface border-b border-line px-5 h-14 flex items-center justify-between">
                     <div className="flex items-center gap-2.5">

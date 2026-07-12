@@ -164,7 +164,7 @@ export function NotificationBell({ apiUrl }: NotificationBellProps) {
                 <>
                     <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
 
-                    <div className="absolute right-0 top-full mt-2 w-80 bg-surface rounded border border-line shadow-[0_8px_24px_rgba(26,28,32,0.12)] z-50 overflow-hidden">
+                    <div className="absolute right-0 top-full mt-2 w-80 bg-surface rounded border border-line shadow-[0_8px_24px_rgba(26,28,32,0.12)] z-50 overflow-hidden animate-pop">
                         <div className="px-4 py-2.5 border-b border-line flex items-center justify-between">
                             <h3 className="text-sm font-semibold">Notifications</h3>
                             {unreadCount > 0 && (

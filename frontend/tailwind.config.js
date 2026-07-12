@@ -44,6 +44,25 @@ module.exports = {
             borderRadius: {
                 DEFAULT: '5px',
             },
+            keyframes: {
+                'slide-in-right': {
+                    '0%': { transform: 'translateX(24px)', opacity: '0' },
+                    '100%': { transform: 'translateX(0)', opacity: '1' },
+                },
+                'fade-in': {
+                    '0%': { opacity: '0' },
+                    '100%': { opacity: '1' },
+                },
+                'pop': {
+                    '0%': { transform: 'translateY(-4px) scale(0.98)', opacity: '0' },
+                    '100%': { transform: 'translateY(0) scale(1)', opacity: '1' },
+                },
+            },
+            animation: {
+                'slide-in-right': 'slide-in-right 0.2s ease-out',
+                'fade-in': 'fade-in 0.15s ease-out',
+                'pop': 'pop 0.15s ease-out',
+            },
         },
     },
     plugins: [],

@@ -90,6 +90,31 @@ body {
   50% { opacity: 0.35; }
 }
 
+/* Value tick — numbers briefly turn signal-orange when live data changes */
+.value-tick {
+  animation: value-tick 0.6s ease-out;
+}
+
+@keyframes value-tick {
+  0% { color: var(--signal); }
+  100% { color: inherit; }
+}
+
+/* New telemetry feed lines slide in */
+.feed-line-new {
+  animation: feed-in 0.4s ease-out;
+}
+
+@keyframes feed-in {
+  0% { opacity: 0; transform: translateY(3px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Tactile button press */
+button:active:not(:disabled) {
+  transform: translateY(0.5px);
+}
+
 /* Leaflet */
 .leaflet-container {
   height: 100%;
@@ -119,4 +144,25 @@ body {
 .leaflet-popup-content {
   margin: 12px 14px;
   line-height: 1.5;
+}
+
+/* Vehicles glide between telemetry positions instead of teleporting.
+   Disabled during zoom so Leaflet's own zoom animation stays smooth. */
+.vehicle-marker-icon {
+  transition: transform 1.2s linear;
+}
+
+.leaflet-zoom-anim .vehicle-marker-icon {
+  transition: none;
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -176,7 +176,7 @@ export default function AdminUsersPage() {
                                                         className="fixed inset-0 z-40"
                                                         onClick={() => setActionMenuOpen(null)}
                                                     />
-                                                    <div className="absolute right-0 top-full mt-1 w-44 bg-surface rounded border border-line shadow-[0_8px_24px_rgba(26,28,32,0.12)] z-50 py-1">
+                                                    <div className="absolute right-0 top-full mt-1 w-44 bg-surface rounded border border-line shadow-[0_8px_24px_rgba(26,28,32,0.12)] z-50 py-1 animate-pop">
                                                         {user.role === 'user' ? (
                                                             <button
                                                                 onClick={() => updateUserRole(user.id, 'admin')}

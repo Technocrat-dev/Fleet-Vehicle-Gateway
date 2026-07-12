@@ -30,12 +30,55 @@ const STACK = [
     { category: 'AI', items: 'YOLOv11, OpenVINO runtime' },
 ]
 
-const FEED_SAMPLE = [
-    '{"vehicle_id":"vehicle-017","occupancy":5,"lat":35.6812,"lng":139.7671,"latency_ms":9.2}',
-    '{"vehicle_id":"vehicle-031","occupancy":2,"lat":35.6586,"lng":139.7454,"latency_ms":8.7}',
-    '{"vehicle_id":"vehicle-008","occupancy":7,"lat":35.6905,"lng":139.6995,"latency_ms":10.1}',
-    '{"vehicle_id":"vehicle-042","occupancy":3,"lat":35.6284,"lng":139.7387,"latency_ms":9.4}',
-]
+// Sample telemetry feed for the hero — generated client-side so the
+// landing page feels alive without pretending to be real fleet data.
+function makeFeedLine(): string {
+    const id = String(Math.floor(Math.random() * 50) + 1).padStart(3, '0')
+    const occupancy = Math.floor(Math.random() * 9)
+    const lat = (35.62 + Math.random() * 0.09).toFixed(4)
+    const lng = (139.68 + Math.random() * 0.1).toFixed(4)
+    const latency = (8 + Math.random() * 2.5).toFixed(1)
+    return `{"vehicle_id":"vehicle-${id}","occupancy":${occupancy},"lat":${lat},"lng":${lng},"latency_ms":${latency}}`
+}
+
+const FEED_LENGTH = 6
+
+function LiveFeed() {
+    const [lines, setLines] = useState<string[]>(() =>
+        Array.from({ length: FEED_LENGTH }, makeFeedLine)
+    )
+
+    useEffect(() => {
+        const id = setInterval(() => {
+            setLines(prev => [...prev.slice(1), makeFeedLine()])
+        }, 1400)
+        return () => clearInterval(id)
+    }, [])
+
+    return (
+        <div className="border border-line rounded overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2 bg-sunken border-b border-line">
+                <span className="num text-xs text-ink-secondary">ws://gateway/ws/telemetry</span>
+                <span className="flex items-center gap-1.5 text-xs text-ink-secondary">
+                    <span className="live-dot" />
+                    live sample
+                </span>
+            </div>
+            <div className="p-4 bg-surface overflow-x-auto">
+                <div className="num text-xs leading-relaxed text-ink-secondary whitespace-pre">
+                    {lines.map((line, i) => (
+                        <div
+                            key={line + i}
+                            className={i === lines.length - 1 ? 'feed-line-new' : undefined}
+                        >
+                            {line}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    )
+}
 
 export default function LandingPage() {
     const [isVisible, setIsVisible] = useState(false)
@@ -151,20 +194,7 @@ export default function LandingPage() {
                         </div>
 
                         {/* Telemetry feed sample */}
-                        <div className="border border-line rounded overflow-hidden">
-                            <div className="flex items-center justify-between px-4 py-2 bg-sunken border-b border-line">
-                                <span className="num text-xs text-ink-secondary">ws://gateway/ws/telemetry</span>
-                                <span className="flex items-center gap-1.5 text-xs text-ink-secondary">
-                                    <span className="live-dot" />
-                                    live
-                                </span>
-                            </div>
-                            <div className="p-4 bg-surface overflow-x-auto">
-                                <pre className="num text-xs leading-relaxed text-ink-secondary">
-                                    {FEED_SAMPLE.join('\n')}
-                                </pre>
-                            </div>
-                        </div>
+                        <LiveFeed />
                     </div>
                 </div>
             </section>
@@ -181,9 +211,11 @@ export default function LandingPage() {
                     {CAPABILITIES.map((feature) => (
                         <div
                             key={feature.title}
-                            className="grid md:grid-cols-[220px_1fr] gap-1 md:gap-8 py-4 border-b border-line"
+                            className="group grid md:grid-cols-[220px_1fr] gap-1 md:gap-8 py-4 px-2 -mx-2 border-b border-line hover:bg-surface transition-colors"
                         >
-                            <h3 className="text-sm font-semibold">{feature.title}</h3>
+                            <h3 className="text-sm font-semibold group-hover:text-signal transition-colors">
+                                {feature.title}
+                            </h3>
                             <p className="text-sm text-ink-secondary leading-relaxed">{feature.desc}</p>
                         </div>
                     ))}
